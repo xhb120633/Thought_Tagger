@@ -64,6 +64,7 @@ export async function compileStudy(input: CompileInput): Promise<void> {
 }
 
 function createManifest(spec: StudySpec, docs: InputDocument[], units: DerivedUnit[]) {
+  const deterministicBuildId = stableHash(JSON.stringify({ spec, docs, units }));
   return {
     study_id: spec.study_id,
     rubric_version: spec.rubric_version,
@@ -72,6 +73,15 @@ function createManifest(spec: StudySpec, docs: InputDocument[], units: DerivedUn
     run_mode: spec.run_mode,
     document_count: docs.length,
     unit_count: units.length,
-    generated_at: new Date().toISOString()
+    build_id: deterministicBuildId
   };
+}
+
+function stableHash(input: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }

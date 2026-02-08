@@ -1,0 +1,12 @@
+{
+  "study_id": "cot_step_tagging",
+  "rubric_version": "v1",
+  "task_type": "annotate",
+  "unitization_mode": "sentence_step",
+  "run_mode": "ra",
+  "workplan": {
+    "annotator_ids": ["ra_1", "ra_2", "ra_3"],
+    "replication_factor": 2,
+    "assignment_strategy": "round_robin"
+  }
+}

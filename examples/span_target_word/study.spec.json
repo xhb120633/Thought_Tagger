@@ -1,0 +1,12 @@
+{
+  "study_id": "span_target_word",
+  "rubric_version": "v1",
+  "task_type": "label",
+  "unitization_mode": "target_span",
+  "run_mode": "ra",
+  "workplan": {
+    "annotator_ids": ["ra_span"],
+    "replication_factor": 1,
+    "assignment_strategy": "round_robin"
+  }
+}

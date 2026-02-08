@@ -2,9 +2,11 @@
 
 ThoughtTagger is an open-source, spec-driven annotation system designed for think-aloud / chain-of-thought (CoT) data.
 
-This repository currently includes:
+This repository includes:
 - Design + V1 spec documents
-- TypeScript MVP packages for core contracts and a first compiler CLI scaffold
+- TypeScript core contracts, compiler pipeline, and assignment expansion
+- A Studio UI preview app
+- Runnable example studies
 
 ## What is implemented now
 
@@ -12,22 +14,28 @@ This repository currently includes:
 - `@thought-tagger/core`
   - Study spec types and validation
   - Deterministic unitization for `document`, `sentence_step`, `target_span`
+  - Segmentation-version hashing for deterministic outputs
 - `@thought-tagger/compiler`
   - Reads `study.spec.json` and dataset (`.jsonl` / `.csv`)
   - Validates input contracts
-  - Generates starter output artifacts:
+  - Generates output artifacts:
     - `manifest.json`
     - `units.jsonl`
     - `annotation_template.csv`
     - `event_log_template.jsonl`
-    - `assignment_manifest.jsonl` (when `workplan` is configured in spec)
+    - `assignment_manifest.jsonl` (when `workplan` is configured)
 - `@thought-tagger/workplan`
   - Deterministic assignment manifest expansion with round-robin replication
+
+## Installation
+
+```bash
+npm install
+```
 
 ## Quickstart
 
 ```bash
-npm install
 npm run build
 npx thought-tagger-compile \
   --spec examples/sentence_labeling/study.spec.json \
@@ -35,7 +43,28 @@ npx thought-tagger-compile \
   --out examples/sentence_labeling/out
 ```
 
-## Repository framework (target architecture)
+## Useful commands
+
+```bash
+npm run build
+npm test
+npm run build -w @thought-tagger/studio
+npm run validate:examples
+npm run check:all
+```
+
+## Documentation
+
+- Installation guide: `docs/installation.md`
+- Quickstart tutorial: `docs/quickstart.md`
+- Spec reference: `docs/spec_reference.md`
+- Deployment guides:
+  - `docs/deployment/self_host.md`
+    - `docs/deployment/prolific.md`
+  - `docs/deployment/pavlovia.md`
+- Troubleshooting: `docs/troubleshooting.md`
+
+## Repository framework
 
 ```
 ThoughtTagger/
