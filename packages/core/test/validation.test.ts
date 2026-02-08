@@ -142,3 +142,52 @@ test("study spec rejects conditional flow with unknown parent option value", () 
     });
   }, /show_if.equals must match one of parent options/);
 });
+
+
+test("study spec rejects multi-select min_select that exceeds option count", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s5",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "participant",
+      questions: [
+        {
+          question_id: "q1",
+          prompt: "Pick issues",
+          response_type: "multi_select",
+          options: [
+            { value: "a", label: "A" },
+            { value: "b", label: "B" }
+          ],
+          min_select: 3
+        }
+      ]
+    });
+  }, /min_select cannot exceed options length/);
+});
+
+test("study spec rejects multi-select max_select that exceeds option count", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s6",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "participant",
+      questions: [
+        {
+          question_id: "q1",
+          prompt: "Pick issues",
+          response_type: "multi_select",
+          options: [
+            { value: "a", label: "A" },
+            { value: "b", label: "B" }
+          ],
+          max_select: 3
+        }
+      ]
+    });
+  }, /max_select cannot exceed options length/);
+});
