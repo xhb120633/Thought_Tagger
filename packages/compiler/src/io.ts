@@ -2,6 +2,11 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { InputDocument, StudySpec } from "@thought-tagger/core";
 
+export interface DatasetInputBundle {
+  primary: InputDocument[];
+  secondary: InputDocument[];
+}
+
 export async function readStudySpec(path: string): Promise<StudySpec> {
   const raw = await readFile(path, "utf8");
   return JSON.parse(raw) as StudySpec;
@@ -22,6 +27,13 @@ export async function readDocuments(path: string): Promise<InputDocument[]> {
   }
 
   throw new Error(`Unsupported dataset format for ${path}. Use .csv or .jsonl`);
+}
+
+export async function readDatasetBundle(primaryPath: string, secondaryPath?: string): Promise<DatasetInputBundle> {
+  return {
+    primary: await readDocuments(primaryPath),
+    secondary: secondaryPath ? await readDocuments(secondaryPath) : []
+  };
 }
 
 function parseSimpleCsv(raw: string): InputDocument[] {

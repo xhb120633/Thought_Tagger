@@ -18,6 +18,15 @@ export interface CompareContextConfig {
   sidecar_context_field?: string;
 }
 
+export type ComparePairingMode = "single_file" | "two_file";
+export type ComparePairingPolicy = "by_index" | "random_pair";
+
+export interface ComparePairingConfig {
+  mode: ComparePairingMode;
+  policy: ComparePairingPolicy;
+  seed?: string;
+}
+
 export type QuestionResponseType = "single_select" | "multi_select" | "free_text" | "choice" | "choice_with_rationale";
 
 export interface QuestionOption {
@@ -53,6 +62,7 @@ export interface StudySpec {
   run_mode: RunMode;
   questions?: RubricQuestion[];
   workplan?: StudyWorkplanConfig;
+  compare_pairing?: ComparePairingConfig;
   compare_context?: CompareContextConfig;
 }
 

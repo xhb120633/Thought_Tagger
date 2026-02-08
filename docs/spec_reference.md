@@ -35,20 +35,26 @@ This document converts the design logics into an implementable baseline spec for
 - optional metadata fields prefixed by `meta.`
 
 ## 2.3 Compare mode input behavior
-Researchers may upload one or more files:
-- **Single-file compare**: self-comparison mode. Pairs are generated within the same source file according to pairing policy.
-- **Two-file compare**: A/B-style mode. One candidate is drawn from file A and one from file B.
+Compare studies must define `compare_pairing` in the study spec:
+- `mode`: `single_file` or `two_file`
+- `policy`: `by_index` or `random_pair`
+- optional `seed` (used for `random_pair`; defaults to `study_id`)
 
-V1 pairing policies (configurable):
-- `by_index`: pair entries by order (`i` in A with `i` in B)
-- `random_pair`: random pairing based on deterministic seed
+Dataset rules by mode:
+- **Single-file compare** (`mode=single_file`): supply only `--dataset`; rows are paired in twos. Requires an even row count.
+- **Two-file compare** (`mode=two_file`): supply `--dataset` and `--dataset-b`; one candidate is drawn from each file. Requires equal row counts.
 
-Presentation randomization:
-- A/B side ordering can be randomized while preserving logged source identity.
+Pairing policies:
+- `by_index`: deterministic order pairing
+- `random_pair`: deterministic shuffle-based pairing using `seed`
+
+Compiler output normalizes generated compare pairs by assigning:
+- `pair_id` (`pair_1`, `pair_2`, ...)
+- per-side slots (`A`/`B`) in unit metadata
 
 Shared context support:
 - `compare_context.mode = inline_meta`: reads context from a metadata key (for example `meta.shared_context`).
-- `compare_context.mode = sidecar`: loads aligned context from JSONL sidecar by `pair_id`.
+- `compare_context.mode = sidecar`: loads aligned context from JSONL sidecar by generated `pair_id`.
 
 ---
 

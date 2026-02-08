@@ -202,13 +202,17 @@ test("compiler emits compare_context.jsonl for inline_meta compare mode", async 
       task_type: "compare",
       unitization_mode: "document",
       run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "by_index"
+      },
       compare_context: {
         mode: "inline_meta",
         context_meta_key: "shared_context"
       }
     })
   );
-  await writeFile(dataPath, ["doc_id,pair_id,text,meta.shared_context", "a1,p1,A output,Topic 1", "b1,p1,B output,Topic 1"].join("\n"));
+  await writeFile(dataPath, ["doc_id,text,meta.shared_context", "a1,A output,Topic 1", "b1,B output,Topic 1"].join("\n"));
 
   await compileStudy({ specPath, datasetPath: dataPath, outDir });
 
@@ -218,7 +222,7 @@ test("compiler emits compare_context.jsonl for inline_meta compare mode", async 
     .map((line) => JSON.parse(line));
 
   assert.equal(rows.length, 2);
-  assert.equal(rows[0].pair_id, "p1");
+  assert.equal(rows[0].pair_id, "pair_1");
   assert.equal(rows[0].context, "Topic 1");
 });
 
@@ -237,6 +241,10 @@ test("compiler emits compare_context.jsonl for sidecar compare mode", async () =
       task_type: "compare",
       unitization_mode: "document",
       run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "by_index"
+      },
       compare_context: {
         mode: "sidecar",
         sidecar_pair_id_field: "pair_id",
@@ -244,8 +252,8 @@ test("compiler emits compare_context.jsonl for sidecar compare mode", async () =
       }
     })
   );
-  await writeFile(dataPath, ["doc_id,pair_id,text", "a1,p1,A output", "b1,p1,B output"].join("\n"));
-  await writeFile(sidecarPath, `${JSON.stringify({ pair_id: "p1", context: "Shared prompt" })}\n`);
+  await writeFile(dataPath, ["doc_id,text", "a1,A output", "b1,B output"].join("\n"));
+  await writeFile(sidecarPath, `${JSON.stringify({ pair_id: "pair_1", context: "Shared prompt" })}\n`);
 
   await compileStudy({ specPath, datasetPath: dataPath, outDir, contextSidecarPath: sidecarPath });
 
@@ -256,4 +264,184 @@ test("compiler emits compare_context.jsonl for sidecar compare mode", async () =
 
   assert.equal(rows.length, 2);
   assert.equal(rows[0].context, "Shared prompt");
+});
+
+
+test("compiler supports two-file by_index compare pairing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPathA = join(dir, "dataset_a.csv");
+  const dataPathB = join(dir, "dataset_b.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_2f",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "two_file",
+        policy: "by_index"
+      }
+    })
+  );
+  await writeFile(dataPathA, ["doc_id,text", "a1,Output A1", "a2,Output A2"].join("\n"));
+  await writeFile(dataPathB, ["doc_id,text", "b1,Output B1", "b2,Output B2"].join("\n"));
+
+  await compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir });
+
+  const units = (await readFile(join(outDir, "units.jsonl"), "utf8"))
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line));
+
+  assert.equal(units.length, 4);
+  assert.equal(units[0].pair_id, "pair_1");
+  assert.equal(units[1].pair_id, "pair_1");
+  assert.equal(units[0].meta.compare_slot, "A");
+  assert.equal(units[1].meta.compare_slot, "B");
+});
+
+test("compiler supports single-file random compare pairing deterministically", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.csv");
+  const outOne = join(dir, "out1");
+  const outTwo = join(dir, "out2");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_rand",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "random_pair",
+        seed: "seed-123"
+      }
+    })
+  );
+  await writeFile(dataPath, ["doc_id,text", "a1,Output 1", "a2,Output 2", "a3,Output 3", "a4,Output 4"].join("\n"));
+
+  await compileStudy({ specPath, datasetPath: dataPath, outDir: outOne });
+  await compileStudy({ specPath, datasetPath: dataPath, outDir: outTwo });
+
+  const unitsOne = await readFile(join(outOne, "units.jsonl"), "utf8");
+  const unitsTwo = await readFile(join(outTwo, "units.jsonl"), "utf8");
+  assert.equal(unitsOne, unitsTwo);
+});
+
+test("compiler rejects two-file compare when dataset lengths differ", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPathA = join(dir, "dataset_a.csv");
+  const dataPathB = join(dir, "dataset_b.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_err",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "two_file",
+        policy: "random_pair"
+      }
+    })
+  );
+  await writeFile(dataPathA, ["doc_id,text", "a1,Output A1", "a2,Output A2"].join("\n"));
+  await writeFile(dataPathB, ["doc_id,text", "b1,Output B1"].join("\n"));
+
+  await assert.rejects(() => compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir }), /equal dataset lengths/);
+});
+
+test("compiler rejects compare rows with blank source doc_id before pairing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_blank_source",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "by_index"
+      }
+    })
+  );
+  await writeFile(dataPath, ["doc_id,text", ",Output A1", "a2,Output A2"].join("\n"));
+
+  await assert.rejects(() => compileStudy({ specPath, datasetPath: dataPath, outDir }), /Every document needs doc_id/);
+});
+
+test("compiler rejects duplicate source doc_id values before two-file pairing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPathA = join(dir, "dataset_a.csv");
+  const dataPathB = join(dir, "dataset_b.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_dupe_source",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "two_file",
+        policy: "by_index"
+      }
+    })
+  );
+  await writeFile(dataPathA, ["doc_id,text", "a1,Output A1", "a1,Output A1 second"].join("\n"));
+  await writeFile(dataPathB, ["doc_id,text", "b1,Output B1", "b2,Output B2"].join("\n"));
+
+  await assert.rejects(
+    () => compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir }),
+    /Duplicate doc_id detected: a1/
+  );
+});
+
+
+test("compiler rejects secondary dataset input for non-compare studies before dataset-b row validation", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPathA = join(dir, "dataset_a.csv");
+  const dataPathB = join(dir, "dataset_b.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "label_with_b",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "participant"
+    })
+  );
+  await writeFile(dataPathA, ["doc_id,text", "a1,Output A1"].join("\n"));
+  await writeFile(dataPathB, ["doc_id,text", ",Malformed secondary row"].join("\n"));
+
+  await assert.rejects(
+    () => compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir }),
+    /Secondary dataset input is only supported when task_type=compare/
+  );
 });

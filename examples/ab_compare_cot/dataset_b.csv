@@ -1,0 +1,3 @@
+doc_id,text,meta.shared_context
+b_1,"Response B chain two.","Summarize the safety policy in one paragraph."
+b_2,"Response B riskier answer.","Explain whether the request should be refused."
