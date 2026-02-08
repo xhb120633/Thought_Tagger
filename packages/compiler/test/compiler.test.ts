@@ -28,6 +28,8 @@ test("compiler emits manifest and templates", async () => {
   const manifest = JSON.parse(await readFile(join(outDir, "manifest.json"), "utf8"));
   assert.equal(manifest.document_count, 1);
   assert.equal(manifest.unit_count, 2);
+  assert.equal(manifest.question_count, 0);
+  assert.equal(manifest.conditional_question_count, 0);
   assert.match(manifest.build_id, /^[0-9a-f]{8}$/);
 
   const annotationTemplate = await readFile(join(outDir, "annotation_template.csv"), "utf8");
@@ -105,6 +107,57 @@ test("compiler correctly parses quoted CSV fields and meta columns", async () =>
   assert.equal(units.length, 2);
   assert.equal(units[0].unit_text, "Hello, world.");
   assert.equal(units[1].unit_text, "Another line");
+});
+
+
+
+test("compiler manifest includes conditional question counts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.jsonl");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "demo_conditional",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "ra",
+      questions: [
+        {
+          question_id: "q1",
+          prompt: "Primary",
+          response_type: "single_select",
+          options: [
+            { value: "yes", label: "Yes" },
+            { value: "no", label: "No" }
+          ]
+        },
+        {
+          question_id: "q2",
+          prompt: "Why no?",
+          response_type: "single_select",
+          options: [
+            { value: "reason_1", label: "Reason 1" },
+            { value: "reason_2", label: "Reason 2" }
+          ],
+          show_if: {
+            question_id: "q1",
+            equals: "no"
+          }
+        }
+      ]
+    })
+  );
+  await writeFile(dataPath, `${JSON.stringify({ doc_id: "d1", text: "Hello." })}\n`);
+
+  await compileStudy({ specPath, datasetPath: dataPath, outDir });
+
+  const manifest = JSON.parse(await readFile(join(outDir, "manifest.json"), "utf8"));
+  assert.equal(manifest.question_count, 2);
+  assert.equal(manifest.conditional_question_count, 1);
 });
 
 test("compiler output manifest is deterministic for identical inputs", async () => {

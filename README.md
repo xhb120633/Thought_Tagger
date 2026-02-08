@@ -62,6 +62,12 @@ npm run check:all
 
 ### Production readiness
 - [Production readiness gap analysis](docs/production_readiness.md)
+- [Post-1.0 roadmap for deferred scope](docs/post_1_0_roadmap.md)
+- [Release policy](docs/release_policy.md)
+- [Security and compliance baseline](docs/security_compliance.md)
+- [Operations runbook](docs/operations_runbook.md)
+- [Environment configuration matrix](docs/environment_matrix.md)
+- [Dependency audit and triage process](docs/dependency_audit.md)
 
 ### End-to-end workflow
 - [Raw dataset → deployed workspace → collected results walkthrough](docs/workflow_dataset_to_results.md)
