@@ -83,6 +83,16 @@ function parseCsvLine(line: string): string[] {
   return values;
 }
 
+
+export async function readJsonlRecords(path: string): Promise<Record<string, unknown>[]> {
+  const raw = await readFile(path, "utf8");
+  return raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
 export async function writeJson(path: string, payload: unknown): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8");

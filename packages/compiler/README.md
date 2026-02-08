@@ -23,3 +23,4 @@ npx thought-tagger-compile --spec <spec.json> --dataset <dataset.csv|dataset.jso
 - `annotation_template.csv`
 - `event_log_template.jsonl`
 - `assignment_manifest.jsonl` (optional; emitted when `workplan` is present in study spec)
+- `compare_context.jsonl` (optional; emitted when `task_type=compare` and `compare.shared_context_mode=inline_meta|sidecar_jsonl`)

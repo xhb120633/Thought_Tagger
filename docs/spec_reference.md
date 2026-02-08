@@ -21,8 +21,8 @@ This document converts the design logics into an implementable baseline spec for
 ### 1.4 Deferred to placeholders
 - Replication strategy implementation details
 - Work-distribution optimization details
-- Conditional question flows
-- Shared context mode for compare tasks
+
+These deferred items are tracked for post-1.0 planning in `docs/post_1_0_roadmap.md`.
 
 ---
 
@@ -39,6 +39,11 @@ This document converts the design logics into an implementable baseline spec for
 
 ## 2.3 Compare mode input behavior
 Researchers may upload one or more files:
+Compare shared context (implemented option):
+- Set `compare.shared_context_mode = inline_meta` and `compare.shared_context_field` in study spec.
+- Provide `meta.<shared_context_field>` per row/document in dataset input.
+- Compiler emits `compare_context.jsonl` aligned by `unit_id`.
+
 - **Single-file compare**: self-comparison mode. Pairs are generated within the same source file according to pairing policy.
 - **Two-file compare**: A/B-style mode. One candidate is drawn from file A and one from file B.
 
@@ -49,8 +54,9 @@ V1 pairing policies (configurable):
 Presentation randomization:
 - A/B side ordering can be randomized while preserving logged source identity.
 
-Placeholder (not implemented in V1):
-- Shared context sidecar file that injects aligned context for each comparison pair.
+Additional implemented shared-context mode:
+- Sidecar mode is supported via `compare.shared_context_mode = sidecar_jsonl` and `compare.shared_context_sidecar_path`.
+- Sidecar rows use `{ "doc_id": string, "shared_context": string }` in JSONL format and must cover all dataset doc IDs.
 
 ---
 
@@ -80,8 +86,15 @@ Each question:
 - built-in options may include `A`, `B`, optionally `tie`
 - rationale can be optional or required
 
-Placeholder (not implemented in V1):
-- Conditional branching (`if answer to Q1 == X then show Q2`).
+Conditional branching support is available through per-question `show_if` rules (see example below).
+
+Example:
+```json
+{
+  "question_id": "q2",
+  "show_if": { "question_id": "q1", "equals": "unclear" }
+}
+```
 
 ---
 

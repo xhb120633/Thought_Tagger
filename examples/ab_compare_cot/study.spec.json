@@ -4,6 +4,38 @@
   "task_type": "compare",
   "unitization_mode": "document",
   "run_mode": "participant",
+  "compare": {
+    "shared_context_mode": "sidecar_jsonl",
+    "shared_context_sidecar_path": "./shared_context.jsonl"
+  },
+  "questions": [
+    {
+      "question_id": "q_preference",
+      "prompt": "Which response is better?",
+      "required": true,
+      "response_type": "choice",
+      "options": [
+        { "value": "A", "label": "A" },
+        { "value": "B", "label": "B" },
+        { "value": "tie", "label": "Tie" }
+      ]
+    },
+    {
+      "question_id": "q_rationale",
+      "prompt": "Why did you select A?",
+      "required": false,
+      "response_type": "choice_with_rationale",
+      "options": [
+        { "value": "A", "label": "A" },
+        { "value": "B", "label": "B" },
+        { "value": "tie", "label": "Tie" }
+      ],
+      "show_if": {
+        "question_id": "q_preference",
+        "equals": "A"
+      }
+    }
+  ],
   "workplan": {
     "annotator_ids": ["ann_1", "ann_2"],
     "replication_factor": 1,
