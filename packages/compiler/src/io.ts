@@ -31,6 +31,7 @@ function parseSimpleCsv(raw: string): InputDocument[] {
   const columns = parseCsvLine(header).map((v) => v.trim());
   const docIdIdx = columns.indexOf("doc_id");
   const textIdx = columns.indexOf("text");
+  const pairIdIdx = columns.indexOf("pair_id");
   const metaColumns = columns
     .map((name, idx) => ({ name, idx }))
     .filter(({ name }) => name.startsWith("meta."));
@@ -47,6 +48,7 @@ function parseSimpleCsv(raw: string): InputDocument[] {
     return {
       doc_id: (cells[docIdIdx] ?? "").trim(),
       text: (cells[textIdx] ?? "").trim(),
+      ...(pairIdIdx >= 0 && (cells[pairIdIdx] ?? "").trim().length > 0 ? { pair_id: (cells[pairIdIdx] ?? "").trim() } : {}),
       ...(metaEntries.length > 0 ? { meta: Object.fromEntries(metaEntries) } : {})
     };
   });

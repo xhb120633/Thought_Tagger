@@ -11,26 +11,22 @@ This repository is in a **release-candidate / production-hardening** state. Core
 
 ## Remaining gaps before final production signoff
 
-1. **Shared compare context mode remains deferred**
-   - Shared context sidecar ingestion for compare tasks is still post-1.0 roadmap scope.
-
-2. **Runtime platform hardening for hosted Studio deployments**
+1. **Runtime platform hardening for hosted Studio deployments**
    - Authentication/authorization, server-side persistence, and audited access controls are still deployment responsibilities outside this repo baseline.
 
-3. **Operational telemetry at deployment layer**
+2. **Operational telemetry at deployment layer**
    - Error monitoring, alerting routes, SLO/SLA tracking, and rollback automation must be configured per environment.
 
-4. **Dependency security cadence**
+3. **Dependency security cadence**
    - Continue periodic `npm audit` triage and patch management per `docs/dependency_audit.md`.
 
 ## Production signoff checklist
 
 1. `npm run check:all` green in CI for target release commit.
 2. No unresolved high/critical dependency findings (or explicitly accepted and documented risk).
-3. Shared-context compare mode decision finalized (implemented or consciously excluded from 1.0).
-4. Hosted deployment security controls (auth, TLS, persistence, backup, logging) verified in staging/prod.
-5. Stable release tag and changelog entry published.
+3. Hosted deployment security controls (auth, TLS, persistence, backup, logging) verified in staging/prod.
+4. Stable release tag and changelog entry published.
 
 ## Bottom line
 
-**Current status:** the repository codebase is production-capable for deterministic compile/export workflows, with remaining risk concentrated in deployment operations and one deferred compare-mode feature.
+**Current status:** the repository codebase is production-capable for deterministic compile/export workflows, with remaining risk concentrated in deployment operations.

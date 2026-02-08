@@ -186,3 +186,74 @@ test("compiler output manifest is deterministic for identical inputs", async () 
   const manifestTwo = await readFile(join(outTwo, "manifest.json"), "utf8");
   assert.equal(manifestOne, manifestTwo);
 });
+
+
+test("compiler emits compare_context.jsonl for inline_meta compare mode", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_inline",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_context: {
+        mode: "inline_meta",
+        context_meta_key: "shared_context"
+      }
+    })
+  );
+  await writeFile(dataPath, ["doc_id,pair_id,text,meta.shared_context", "a1,p1,A output,Topic 1", "b1,p1,B output,Topic 1"].join("\n"));
+
+  await compileStudy({ specPath, datasetPath: dataPath, outDir });
+
+  const rows = (await readFile(join(outDir, "compare_context.jsonl"), "utf8"))
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line));
+
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].pair_id, "p1");
+  assert.equal(rows[0].context, "Topic 1");
+});
+
+test("compiler emits compare_context.jsonl for sidecar compare mode", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.csv");
+  const sidecarPath = join(dir, "context.jsonl");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_sidecar",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_context: {
+        mode: "sidecar",
+        sidecar_pair_id_field: "pair_id",
+        sidecar_context_field: "context"
+      }
+    })
+  );
+  await writeFile(dataPath, ["doc_id,pair_id,text", "a1,p1,A output", "b1,p1,B output"].join("\n"));
+  await writeFile(sidecarPath, `${JSON.stringify({ pair_id: "p1", context: "Shared prompt" })}\n`);
+
+  await compileStudy({ specPath, datasetPath: dataPath, outDir, contextSidecarPath: sidecarPath });
+
+  const rows = (await readFile(join(outDir, "compare_context.jsonl"), "utf8"))
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line));
+
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].context, "Shared prompt");
+});

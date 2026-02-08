@@ -12,13 +12,15 @@ export function deriveUnits(documents: InputDocument[], mode: UnitizationMode): 
   if (mode === "document" || mode === "target_span") {
     return documents.map((doc) => ({
       doc_id: doc.doc_id,
+      pair_id: doc.pair_id,
       unit_id: `${doc.doc_id}:u0`,
       unit_type: mode,
       index: 0,
       char_start: 0,
       char_end: doc.text.length,
       unit_text: doc.text,
-      segmentation_version: segmentationVersion
+      segmentation_version: segmentationVersion,
+      meta: doc.meta
     }));
   }
 
@@ -43,13 +45,15 @@ function splitSentences(doc: InputDocument, segmentationVersion: string): Derive
 
     units.push({
       doc_id: doc.doc_id,
+      pair_id: doc.pair_id,
       unit_id: `${doc.doc_id}:u${index}`,
       unit_type: "sentence_step",
       index,
       char_start: charStart,
       char_end: charEnd,
       unit_text: trimmed,
-      segmentation_version: segmentationVersion
+      segmentation_version: segmentationVersion,
+      meta: doc.meta
     });
     index += 1;
   }
@@ -57,13 +61,15 @@ function splitSentences(doc: InputDocument, segmentationVersion: string): Derive
   if (units.length === 0) {
     units.push({
       doc_id: doc.doc_id,
+      pair_id: doc.pair_id,
       unit_id: `${doc.doc_id}:u0`,
       unit_type: "sentence_step",
       index: 0,
       char_start: 0,
       char_end: doc.text.length,
       unit_text: doc.text,
-      segmentation_version: segmentationVersion
+      segmentation_version: segmentationVersion,
+      meta: doc.meta
     });
   }
 

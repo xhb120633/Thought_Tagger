@@ -5,6 +5,7 @@ interface Args {
   spec?: string;
   dataset?: string;
   out?: string;
+  contextSidecar?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -14,12 +15,13 @@ function parseArgs(argv: string[]): Args {
     if (token === "--spec") args.spec = argv[i + 1];
     if (token === "--dataset") args.dataset = argv[i + 1];
     if (token === "--out") args.out = argv[i + 1];
+    if (token === "--context-sidecar") args.contextSidecar = argv[i + 1];
   }
   return args;
 }
 
 function usage(): string {
-  return "Usage: thought-tagger-compile --spec <path> --dataset <path(.csv|.jsonl)> --out <dir>";
+  return "Usage: thought-tagger-compile --spec <path> --dataset <path(.csv|.jsonl)> --out <dir> [--context-sidecar <path.jsonl>]";
 }
 
 const parsed = parseArgs(process.argv.slice(2));
@@ -28,7 +30,7 @@ if (!parsed.spec || !parsed.dataset || !parsed.out) {
   process.exit(1);
 }
 
-compileStudy({ specPath: parsed.spec, datasetPath: parsed.dataset, outDir: parsed.out })
+compileStudy({ specPath: parsed.spec, datasetPath: parsed.dataset, outDir: parsed.out, contextSidecarPath: parsed.contextSidecar })
   .then(() => {
     console.log(`Compiled study into ${parsed.out}`);
   })

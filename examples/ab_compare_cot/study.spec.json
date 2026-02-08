@@ -4,9 +4,17 @@
   "task_type": "compare",
   "unitization_mode": "document",
   "run_mode": "participant",
+  "compare_context": {
+    "mode": "inline_meta",
+    "context_meta_key": "shared_context"
+  },
   "workplan": {
     "annotator_ids": ["ann_1", "ann_2"],
     "replication_factor": 1,
-    "assignment_strategy": "round_robin"
+    "assignment_strategy": "weighted",
+    "assignment_weights": {
+      "ann_1": 2,
+      "ann_2": 1
+    }
   }
 }
