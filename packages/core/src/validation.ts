@@ -17,6 +17,24 @@ export function assertValidStudySpec(spec: StudySpec): void {
     assertValidQuestions(spec.task_type, spec.questions);
   }
 
+
+  if (spec.task_type === "compare" && spec.compare_context) {
+    if (spec.compare_context.mode === "inline_meta") {
+      if (!spec.compare_context.context_meta_key?.trim()) {
+        throw new Error("compare_context.context_meta_key is required when mode=inline_meta");
+      }
+    }
+
+    if (spec.compare_context.mode === "sidecar") {
+      if (!spec.compare_context.sidecar_pair_id_field?.trim()) {
+        throw new Error("compare_context.sidecar_pair_id_field is required when mode=sidecar");
+      }
+      if (!spec.compare_context.sidecar_context_field?.trim()) {
+        throw new Error("compare_context.sidecar_context_field is required when mode=sidecar");
+      }
+    }
+  }
+
   if (spec.workplan) {
     if (!Array.isArray(spec.workplan.annotator_ids) || spec.workplan.annotator_ids.length === 0) {
       throw new Error("workplan.annotator_ids must include at least one annotator id");
@@ -37,12 +55,43 @@ export function assertValidStudySpec(spec: StudySpec): void {
       }
     }
 
-    if (spec.workplan.assignment_strategy && !["round_robin", "load_balanced"].includes(spec.workplan.assignment_strategy)) {
+    if (
+      spec.workplan.assignment_strategy &&
+      !["round_robin", "load_balanced", "weighted", "stratified_round_robin"].includes(spec.workplan.assignment_strategy)
+    ) {
       throw new Error(`Unsupported workplan.assignment_strategy: ${spec.workplan.assignment_strategy}`);
     }
 
     if (spec.workplan.assignment_seed !== undefined && !spec.workplan.assignment_seed.trim()) {
       throw new Error("workplan.assignment_seed cannot be empty when provided");
+    }
+
+    if (spec.workplan.assignment_weights) {
+      const entries = Object.entries(spec.workplan.assignment_weights);
+      if (entries.length === 0) {
+        throw new Error("workplan.assignment_weights must include at least one annotator weight");
+      }
+
+      for (const [annotatorId, weight] of entries) {
+        if (!spec.workplan.annotator_ids.includes(annotatorId)) {
+          throw new Error(`workplan.assignment_weights includes unknown annotator_id: ${annotatorId}`);
+        }
+        if (typeof weight !== "number" || !Number.isFinite(weight) || weight <= 0) {
+          throw new Error(`workplan.assignment_weights must be positive numbers: ${annotatorId}`);
+        }
+      }
+    }
+
+    if (spec.workplan.assignment_strategy === "weighted") {
+      if (!spec.workplan.assignment_weights) {
+        throw new Error("workplan.assignment_weights is required for weighted strategy");
+      }
+    }
+
+    if (spec.workplan.assignment_strategy === "stratified_round_robin") {
+      if (!spec.workplan.stratify_by_meta_key?.trim()) {
+        throw new Error("workplan.stratify_by_meta_key is required for stratified_round_robin strategy");
+      }
     }
   }
 }

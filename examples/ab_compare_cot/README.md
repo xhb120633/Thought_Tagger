@@ -1,6 +1,6 @@
 # Example: A/B Compare CoT
 
-This example demonstrates a `compare` task in `document` unitization mode.
+This example demonstrates a `compare` task in `document` unitization mode with inline shared context and weighted assignment strategy.
 
 ## Run
 
@@ -11,4 +11,4 @@ npx thought-tagger-compile \
   --out examples/ab_compare_cot/out
 ```
 
-Generated outputs include a manifest, unit table, annotation template, event log template, and assignment manifest.
+Generated outputs include a manifest, unit table, annotation template, event log template, assignment manifest, and compare context table.

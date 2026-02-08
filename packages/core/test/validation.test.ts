@@ -177,3 +177,67 @@ test("study spec rejects empty assignment_seed when provided", () => {
     });
   }, /assignment_seed cannot be empty/);
 });
+
+
+test("study spec rejects weighted strategy without weights", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s7",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "ra",
+      workplan: {
+        annotator_ids: ["ann_a", "ann_b"],
+        assignment_strategy: "weighted"
+      }
+    });
+  }, /assignment_weights is required for weighted strategy/);
+});
+
+test("study spec rejects stratified strategy without key", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s8",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "ra",
+      workplan: {
+        annotator_ids: ["ann_a", "ann_b"],
+        assignment_strategy: "stratified_round_robin"
+      }
+    });
+  }, /stratify_by_meta_key is required/);
+});
+
+test("study spec allows compare inline context configuration", () => {
+  assert.doesNotThrow(() => {
+    assertValidStudySpec({
+      study_id: "s9",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_context: {
+        mode: "inline_meta",
+        context_meta_key: "prompt"
+      }
+    });
+  });
+});
+
+test("study spec rejects compare sidecar context missing fields", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s10",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_context: {
+        mode: "sidecar"
+      }
+    });
+  }, /sidecar_pair_id_field is required/);
+});

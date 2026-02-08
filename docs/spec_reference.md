@@ -19,9 +19,7 @@ This document converts the design logics into an implementable baseline spec for
 - `ra`
 
 ### 1.4 Deferred to placeholders
-- Shared context mode for compare tasks
-
-These deferred items are tracked for post-1.0 planning in `docs/post_1_0_roadmap.md`.
+- None (all prior post-1.0 placeholders in roadmap are implemented).
 
 ---
 
@@ -48,10 +46,9 @@ V1 pairing policies (configurable):
 Presentation randomization:
 - A/B side ordering can be randomized while preserving logged source identity.
 
-Placeholder (not implemented in V1):
-- Shared context sidecar file that injects aligned context for each comparison pair.
-
-Roadmap tracking: `docs/post_1_0_roadmap.md`.
+Shared context support:
+- `compare_context.mode = inline_meta`: reads context from a metadata key (for example `meta.shared_context`).
+- `compare_context.mode = sidecar`: loads aligned context from JSONL sidecar by `pair_id`.
 
 ---
 
@@ -134,12 +131,16 @@ Example:
 ## 5.3 Workplan assignment strategies
 - `round_robin` (default): rotate annotators by unit index; deterministic and simple.
 - `load_balanced`: deterministic least-loaded assignment with stable hash tie-breaking per `assignment_seed`.
+- `weighted`: deterministic weighted balancing using `assignment_weights`.
+- `stratified_round_robin`: round-robin rotation independently within each stratum defined by `stratify_by_meta_key`.
 
 Common workplan fields:
 - `annotator_ids` (required)
 - `replication_factor` (optional, defaults to `1`)
 - `assignment_strategy` (optional, defaults to `round_robin`)
-- `assignment_seed` (optional, used by `load_balanced`; defaults to `thought-tagger-v1`)
+- `assignment_seed` (optional, used by `load_balanced` and `weighted`; defaults to `thought-tagger-v1`)
+- `assignment_weights` (required for `weighted`)
+- `stratify_by_meta_key` (required for `stratified_round_robin`)
 
 ## 6. Outputs (V1 Contract Targets)
 

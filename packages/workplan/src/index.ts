@@ -20,6 +20,19 @@ export function buildAssignmentManifest(
     return buildLoadBalancedAssignmentManifest(units, annotators, replicationFactor, seed);
   }
 
+  if (strategy === "weighted") {
+    return buildWeightedAssignmentManifest(units, annotators, replicationFactor, seed, workplan.assignment_weights ?? {});
+  }
+
+  if (strategy === "stratified_round_robin") {
+    return buildStratifiedRoundRobinAssignmentManifest(
+      units,
+      annotators,
+      replicationFactor,
+      workplan.stratify_by_meta_key ?? ""
+    );
+  }
+
   return units.flatMap((unit, unitIndex) => {
     const selectedAnnotators = pickAnnotatorsRoundRobin(annotators, unitIndex, replicationFactor);
     return selectedAnnotators.map((annotatorId) => ({
@@ -52,6 +65,63 @@ function buildLoadBalancedAssignmentManifest(
       assignmentCountByAnnotator.set(annotatorId, (assignmentCountByAnnotator.get(annotatorId) ?? 0) + 1);
     }
 
+    return selectedAnnotators.map((annotatorId) => ({
+      assignment_id: `${unit.unit_id}:${annotatorId}`,
+      annotator_id: annotatorId,
+      doc_id: unit.doc_id,
+      unit_id: unit.unit_id
+    }));
+  });
+}
+
+function buildWeightedAssignmentManifest(
+  units: DerivedUnit[],
+  annotators: string[],
+  replicationFactor: number,
+  seed: string,
+  weights: Record<string, number>
+): AssignmentManifestRow[] {
+  const defaultWeight = 1;
+  const assignmentCountByAnnotator = new Map(annotators.map((annotatorId) => [annotatorId, 0]));
+
+  return units.flatMap((unit) => {
+    const selectedAnnotators = pickAnnotatorsWeighted(
+      unit,
+      annotators,
+      replicationFactor,
+      seed,
+      weights,
+      defaultWeight,
+      assignmentCountByAnnotator
+    );
+
+    for (const annotatorId of selectedAnnotators) {
+      assignmentCountByAnnotator.set(annotatorId, (assignmentCountByAnnotator.get(annotatorId) ?? 0) + 1);
+    }
+
+    return selectedAnnotators.map((annotatorId) => ({
+      assignment_id: `${unit.unit_id}:${annotatorId}`,
+      annotator_id: annotatorId,
+      doc_id: unit.doc_id,
+      unit_id: unit.unit_id
+    }));
+  });
+}
+
+function buildStratifiedRoundRobinAssignmentManifest(
+  units: DerivedUnit[],
+  annotators: string[],
+  replicationFactor: number,
+  stratifyByMetaKey: string
+): AssignmentManifestRow[] {
+  const counters = new Map<string, number>();
+
+  return units.flatMap((unit) => {
+    const stratum = deriveStratumKey(unit, stratifyByMetaKey);
+    const unitIndex = counters.get(stratum) ?? 0;
+    counters.set(stratum, unitIndex + 1);
+
+    const selectedAnnotators = pickAnnotatorsRoundRobin(annotators, unitIndex, replicationFactor);
     return selectedAnnotators.map((annotatorId) => ({
       assignment_id: `${unit.unit_id}:${annotatorId}`,
       annotator_id: annotatorId,
@@ -98,6 +168,55 @@ function pickAnnotatorsLoadBalanced(
   }
 
   return [...picked];
+}
+
+function pickAnnotatorsWeighted(
+  unit: DerivedUnit,
+  annotators: string[],
+  replicationFactor: number,
+  seed: string,
+  weights: Record<string, number>,
+  defaultWeight: number,
+  assignmentCountByAnnotator: Map<string, number>
+): string[] {
+  const picked = new Set<string>();
+
+  while (picked.size < replicationFactor) {
+    const candidates = annotators.filter((annotatorId) => !picked.has(annotatorId));
+    const minRatio = Math.min(
+      ...candidates.map((annotatorId) => {
+        const load = assignmentCountByAnnotator.get(annotatorId) ?? 0;
+        const weight = weights[annotatorId] ?? defaultWeight;
+        return load / weight;
+      })
+    );
+
+    const best = candidates.filter((annotatorId) => {
+      const load = assignmentCountByAnnotator.get(annotatorId) ?? 0;
+      const weight = weights[annotatorId] ?? defaultWeight;
+      return load / weight === minRatio;
+    });
+
+    best.sort((a, b) => {
+      const hashA = stableHash(`${seed}:${unit.unit_id}:${a}`);
+      const hashB = stableHash(`${seed}:${unit.unit_id}:${b}`);
+      return hashA.localeCompare(hashB);
+    });
+
+    picked.add(best[0]);
+  }
+
+  return [...picked];
+}
+
+function deriveStratumKey(unit: DerivedUnit, stratifyByMetaKey: string): string {
+  if (!stratifyByMetaKey) return "__all__";
+  const meta = unit.meta as Record<string, string | number | boolean | null> | undefined;
+  const raw = meta?.[stratifyByMetaKey];
+  if (raw === undefined || raw === null || String(raw).length === 0) {
+    return "__missing__";
+  }
+  return String(raw);
 }
 
 function stableHash(input: string): string {
