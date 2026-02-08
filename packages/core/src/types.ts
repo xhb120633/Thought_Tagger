@@ -2,12 +2,19 @@ export type TaskType = "label" | "annotate" | "compare";
 export type UnitizationMode = "document" | "sentence_step" | "target_span";
 export type RunMode = "participant" | "ra";
 
+export interface StudyWorkplanConfig {
+  annotator_ids: string[];
+  replication_factor?: number;
+  assignment_strategy?: "round_robin";
+}
+
 export interface StudySpec {
   study_id: string;
   rubric_version: string;
   task_type: TaskType;
   unitization_mode: UnitizationMode;
   run_mode: RunMode;
+  workplan?: StudyWorkplanConfig;
 }
 
 export interface InputDocument {

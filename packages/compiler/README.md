@@ -15,3 +15,4 @@ npx thought-tagger-compile --spec <spec.json> --dataset <dataset.csv|dataset.jso
 - `units.jsonl`
 - `annotation_template.csv`
 - `event_log_template.jsonl`
+- `assignment_manifest.jsonl` (optional; emitted when `workplan` is present in study spec)
