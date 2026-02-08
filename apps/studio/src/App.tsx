@@ -1,5 +1,17 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import { buildArtifacts, deriveUnits, InputDoc, parseCsv, parseJsonl, RunMode, StudySpec, TaskType, UnitizationMode } from "./compilerCompat";
+import {
+  buildArtifacts,
+  deriveUnits,
+  InputDoc,
+  parseCsv,
+  parseJsonl,
+  parseRubricQuestions,
+  RubricQuestion,
+  RunMode,
+  StudySpec,
+  TaskType,
+  UnitizationMode
+} from "./compilerCompat";
 
 const RUBRIC_KEY = "studio:rubric";
 const RA_DRAFT_KEY = "studio:ra-draft";
@@ -29,16 +41,17 @@ const defaultState: StudioState = {
   replication_factor: 1,
   datasetText: '{"doc_id":"d1","text":"Sentence one. Sentence two."}',
   datasetFormat: "jsonl",
-  rubricText: '{\n  "criteria": [\n    { "id": "c1", "label": "Correctness", "scale": [1,2,3,4,5] }\n  ]\n}'
+  rubricText: '{\n  "questions": [\n    {\n      "question_id": "q1",\n      "prompt": "Tag notable issues in this text",\n      "response_type": "free_text",\n      "required": true\n    }\n  ]\n}'
 };
 
-function toSpec(state: StudioState): StudySpec {
+function toSpec(state: StudioState, questions: RubricQuestion[]): StudySpec {
   const spec: StudySpec = {
     study_id: state.study_id,
     rubric_version: state.rubric_version,
     task_type: state.task_type,
     unitization_mode: state.unitization_mode,
-    run_mode: state.run_mode
+    run_mode: state.run_mode,
+    questions
   };
   if (state.annotator_ids.trim()) {
     spec.workplan = {
@@ -93,7 +106,8 @@ export function App() {
 
   const compiled = useMemo(() => {
     try {
-      const spec = toSpec(state);
+      const rubricQuestions = parseRubricQuestions(state.rubricText, state.task_type);
+      const spec = toSpec(state, rubricQuestions);
       if (!spec.study_id || !spec.rubric_version) {
         throw new Error("Study ID and rubric version are required");
       }
@@ -236,6 +250,7 @@ export function App() {
             <li>Study: {compiled.spec.study_id}</li>
             <li>Documents: {compiled.docs.length}</li>
             <li>Units: {compiled.units.length}</li>
+            <li>Questions: {compiled.spec.questions?.length ?? 0}</li>
             <li>Mode: {compiled.spec.unitization_mode}</li>
           </ul>
           <button onClick={exportBundle}>Export Compiler Bundle</button>
