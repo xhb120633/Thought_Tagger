@@ -292,3 +292,19 @@ ThoughtTagger/
 ## 12. Design Invariant (One Sentence)
 
 **ThoughtTagger standardizes *how* annotation is executed, not *what* is being studied — enabling scalable, replicable, and analyzable CoT annotation without job cloning or bespoke UI engineering.**
+
+---
+
+## 13. V1 Baseline Decisions (Captured)
+
+Based on product clarification, V1 includes:
+- All task types: `label`, `annotate`, `compare`
+- All unitization modes: `document`, `sentence / step`, `target_span`
+- Both run modes: `participant` and `RA`
+
+Deferred as placeholders for later iteration:
+- Replication/work-distribution implementation depth
+- Conditional question flows
+- Shared context mode for compare
+
+See `docs/spec_reference.md` for the implementable baseline specification.
