@@ -9,6 +9,13 @@ npm run build -w @thought-tagger/compiler
 npx thought-tagger-compile --spec <spec.json> --dataset <dataset.csv|dataset.jsonl> --out <output_dir>
 ```
 
+## Dataset input notes
+
+- Both `.jsonl` and `.csv` are supported.
+- Required columns/fields: `doc_id`, `text`.
+- CSV supports quoted values (including embedded commas and escaped double quotes).
+- CSV columns prefixed with `meta.` are loaded into per-document `meta` fields.
+
 ## Outputs
 
 - `manifest.json`

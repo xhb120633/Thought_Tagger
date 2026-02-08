@@ -28,20 +28,59 @@ function parseSimpleCsv(raw: string): InputDocument[] {
   const rows = raw.split(/\r?\n/).filter(Boolean);
   if (rows.length < 2) return [];
   const [header, ...data] = rows;
-  const columns = header.split(",").map((v) => v.trim());
+  const columns = parseCsvLine(header).map((v) => v.trim());
   const docIdIdx = columns.indexOf("doc_id");
   const textIdx = columns.indexOf("text");
+  const metaColumns = columns
+    .map((name, idx) => ({ name, idx }))
+    .filter(({ name }) => name.startsWith("meta."));
   if (docIdIdx < 0 || textIdx < 0) {
     throw new Error("CSV needs doc_id and text columns");
   }
 
   return data.map((line) => {
-    const cells = line.split(",");
+    const cells = parseCsvLine(line);
+    const metaEntries = metaColumns
+      .map(({ name, idx }) => [name.slice("meta.".length), (cells[idx] ?? "").trim()] as const)
+      .filter(([, value]) => value.length > 0);
+
     return {
       doc_id: (cells[docIdIdx] ?? "").trim(),
-      text: (cells[textIdx] ?? "").trim()
+      text: (cells[textIdx] ?? "").trim(),
+      ...(metaEntries.length > 0 ? { meta: Object.fromEntries(metaEntries) } : {})
     };
   });
+}
+
+function parseCsvLine(line: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      const next = line[i + 1];
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (ch === "," && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += ch;
+  }
+
+  values.push(current);
+  return values;
 }
 
 export async function writeJson(path: string, payload: unknown): Promise<void> {
