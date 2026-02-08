@@ -11,14 +11,10 @@ This document tracks features explicitly deferred from the V1 baseline and refer
 ## Roadmap items
 
 ### R1. Replication strategy expansion
-**Current state (V1):** deterministic round-robin replication through the workplan package.  
-**Next step:** add configurable replication policies (for example weighted assignment and stratified coverage), with deterministic tie-breaking and test vectors.  
-**Done when:** policy options are spec-defined, implemented in compiler/workplan, and validated in examples.
+**Current state (V1):** deterministic round-robin and load-balanced assignment strategies are supported.  
+**Next step:** add advanced policies (for example weighted assignment and stratified coverage), with deterministic tie-breaking and test vectors.  
+**Done when:** advanced policy options are spec-defined, implemented in compiler/workplan, and validated in examples.
 
-### R2. Work-distribution optimization
-**Current state (V1):** deterministic assignment generation without dynamic optimization.  
-**Next step:** introduce optimization goals (for example balancing by metadata, throughput targets, or annotator load), while preserving reproducibility guarantees.  
-**Done when:** optimization mode can be toggled, emits explainable manifests, and has regression tests.
 
 ### R4. Shared context in compare tasks
 **Current state (V1):** compare tasks evaluate A/B items without shared context payload support.  
@@ -35,7 +31,6 @@ This document tracks features explicitly deferred from the V1 baseline and refer
 1. **R4 Shared context in compare tasks** (critical for compare quality).
 2. **R5 Shared context sidecar support** (enables scalable context operations).
 3. **R1 Replication strategy expansion**.
-4. **R2 Work-distribution optimization**.
 
 ## Tracking model
 

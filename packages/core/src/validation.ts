@@ -37,8 +37,12 @@ export function assertValidStudySpec(spec: StudySpec): void {
       }
     }
 
-    if (spec.workplan.assignment_strategy && spec.workplan.assignment_strategy !== "round_robin") {
+    if (spec.workplan.assignment_strategy && !["round_robin", "load_balanced"].includes(spec.workplan.assignment_strategy)) {
       throw new Error(`Unsupported workplan.assignment_strategy: ${spec.workplan.assignment_strategy}`);
+    }
+
+    if (spec.workplan.assignment_seed !== undefined && !spec.workplan.assignment_seed.trim()) {
+      throw new Error("workplan.assignment_seed cannot be empty when provided");
     }
   }
 }
