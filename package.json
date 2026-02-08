@@ -1,0 +1,14 @@
+{
+  "name": "thought-tagger",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "packages/exporters/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @thought-tagger/core && npm run build -w @thought-tagger/compiler",
+    "test": "npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/compiler"
+  }
+}
