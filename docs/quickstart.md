@@ -15,7 +15,7 @@ npm run build
 3. Compile a sample study:
 
 ```bash
-npx thought-tagger-compile \
+npm run compile -- \
   --spec examples/sentence_labeling/study.spec.json \
   --dataset examples/sentence_labeling/dataset.jsonl \
   --out examples/sentence_labeling/out

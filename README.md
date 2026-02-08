@@ -2,12 +2,6 @@
 
 ThoughtTagger is an open-source, spec-driven annotation system designed for think-aloud / chain-of-thought (CoT) data.
 
-This repository includes:
-- Design + V1 spec documents
-- TypeScript core contracts, compiler pipeline, and assignment expansion
-- A Studio UI preview app
-- Runnable example studies
-
 ## What is implemented now
 
 ### Packages
@@ -37,7 +31,7 @@ npm install
 
 ```bash
 npm run build
-npx thought-tagger-compile \
+npm run compile -- \
   --spec examples/sentence_labeling/study.spec.json \
   --dataset examples/sentence_labeling/dataset.jsonl \
   --out examples/sentence_labeling/out
@@ -53,16 +47,23 @@ npm run validate:examples
 npm run check:all
 ```
 
-## Documentation
+## Documentation index
 
-- Installation guide: `docs/installation.md`
-- Quickstart tutorial: `docs/quickstart.md`
-- Spec reference: `docs/spec_reference.md`
-- Deployment guides:
-  - `docs/deployment/self_host.md`
-    - `docs/deployment/prolific.md`
-  - `docs/deployment/pavlovia.md`
-- Troubleshooting: `docs/troubleshooting.md`
+### Getting started
+- [Installation guide](docs/installation.md)
+- [Quickstart tutorial](docs/quickstart.md)
+- [Spec reference](docs/spec_reference.md)
+
+### Deployment guides
+- [Self-hosted web workspace deployment](docs/deployment/self_host.md)
+- [Pavlovia/jsPsych deployment](docs/deployment/pavlovia.md)
+- [Prolific integration deployment](docs/deployment/prolific.md)
+
+### End-to-end workflow
+- [Raw dataset → deployed workspace → collected results walkthrough](docs/workflow_dataset_to_results.md)
+
+### Troubleshooting
+- [Troubleshooting guide](docs/troubleshooting.md)
 
 ## Repository framework
 
@@ -82,4 +83,4 @@ ThoughtTagger/
 └─ docs/
 ```
 
-See `docs/spec_reference.md` for baseline V1 requirements and constraints.
+See [docs/spec_reference.md](docs/spec_reference.md) for baseline V1 requirements and constraints.
