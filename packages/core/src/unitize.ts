@@ -1,38 +1,31 @@
 import { DerivedUnit, InputDocument, UnitizationMode } from "./types.js";
 
-const SEGMENTATION_VERSION = "rulebased_v1";
+const SEGMENTATION_ALGO = "rulebased_v1";
 
-export function deriveUnits(documents: InputDocument[], mode: UnitizationMode): DerivedUnit[] {
-  if (mode === "document") {
-    return documents.map((doc) => ({
-      doc_id: doc.doc_id,
-      unit_id: `${doc.doc_id}:u0`,
-      unit_type: mode,
-      index: 0,
-      char_start: 0,
-      char_end: doc.text.length,
-      unit_text: doc.text,
-      segmentation_version: SEGMENTATION_VERSION
-    }));
-  }
-
-  if (mode === "target_span") {
-    return documents.map((doc) => ({
-      doc_id: doc.doc_id,
-      unit_id: `${doc.doc_id}:u0`,
-      unit_type: mode,
-      index: 0,
-      char_start: 0,
-      char_end: doc.text.length,
-      unit_text: doc.text,
-      segmentation_version: SEGMENTATION_VERSION
-    }));
-  }
-
-  return documents.flatMap((doc) => splitSentences(doc));
+export function getSegmentationVersion(mode: UnitizationMode): string {
+  return `${SEGMENTATION_ALGO}_${stableHash(`${mode}:${SEGMENTATION_ALGO}`)}`;
 }
 
-function splitSentences(doc: InputDocument): DerivedUnit[] {
+export function deriveUnits(documents: InputDocument[], mode: UnitizationMode): DerivedUnit[] {
+  const segmentationVersion = getSegmentationVersion(mode);
+
+  if (mode === "document" || mode === "target_span") {
+    return documents.map((doc) => ({
+      doc_id: doc.doc_id,
+      unit_id: `${doc.doc_id}:u0`,
+      unit_type: mode,
+      index: 0,
+      char_start: 0,
+      char_end: doc.text.length,
+      unit_text: doc.text,
+      segmentation_version: segmentationVersion
+    }));
+  }
+
+  return documents.flatMap((doc) => splitSentences(doc, segmentationVersion));
+}
+
+function splitSentences(doc: InputDocument, segmentationVersion: string): DerivedUnit[] {
   const units: DerivedUnit[] = [];
   const regex = /[^.!?\n]+[.!?]?/g;
   const matches = doc.text.matchAll(regex);
@@ -56,7 +49,7 @@ function splitSentences(doc: InputDocument): DerivedUnit[] {
       char_start: charStart,
       char_end: charEnd,
       unit_text: trimmed,
-      segmentation_version: SEGMENTATION_VERSION
+      segmentation_version: segmentationVersion
     });
     index += 1;
   }
@@ -70,9 +63,18 @@ function splitSentences(doc: InputDocument): DerivedUnit[] {
       char_start: 0,
       char_end: doc.text.length,
       unit_text: doc.text,
-      segmentation_version: SEGMENTATION_VERSION
+      segmentation_version: segmentationVersion
     });
   }
 
   return units;
+}
+
+function stableHash(input: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }

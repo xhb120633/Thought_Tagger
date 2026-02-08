@@ -1,0 +1,12 @@
+{
+  "study_id": "ab_compare_cot",
+  "rubric_version": "v1",
+  "task_type": "compare",
+  "unitization_mode": "document",
+  "run_mode": "participant",
+  "workplan": {
+    "annotator_ids": ["ann_1", "ann_2"],
+    "replication_factor": 1,
+    "assignment_strategy": "round_robin"
+  }
+}

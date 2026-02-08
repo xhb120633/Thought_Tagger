@@ -28,6 +28,7 @@ test("compiler emits manifest and templates", async () => {
   const manifest = JSON.parse(await readFile(join(outDir, "manifest.json"), "utf8"));
   assert.equal(manifest.document_count, 1);
   assert.equal(manifest.unit_count, 2);
+  assert.match(manifest.build_id, /^[0-9a-f]{8}$/);
 
   const annotationTemplate = await readFile(join(outDir, "annotation_template.csv"), "utf8");
   assert.match(annotationTemplate.split(/\r?\n/)[0] ?? "", /confidence,rationale,condition_id/);
@@ -104,4 +105,31 @@ test("compiler correctly parses quoted CSV fields and meta columns", async () =>
   assert.equal(units.length, 2);
   assert.equal(units[0].unit_text, "Hello, world.");
   assert.equal(units[1].unit_text, "Another line");
+});
+
+test("compiler output manifest is deterministic for identical inputs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.jsonl");
+  const outOne = join(dir, "out1");
+  const outTwo = join(dir, "out2");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "stable",
+      rubric_version: "v1",
+      task_type: "annotate",
+      unitization_mode: "sentence_step",
+      run_mode: "participant"
+    })
+  );
+  await writeFile(dataPath, `${JSON.stringify({ doc_id: "d1", text: "Stable. Build." })}\n`);
+
+  await compileStudy({ specPath, datasetPath: dataPath, outDir: outOne });
+  await compileStudy({ specPath, datasetPath: dataPath, outDir: outTwo });
+
+  const manifestOne = await readFile(join(outOne, "manifest.json"), "utf8");
+  const manifestTwo = await readFile(join(outTwo, "manifest.json"), "utf8");
+  assert.equal(manifestOne, manifestTwo);
 });
