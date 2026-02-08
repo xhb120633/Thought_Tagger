@@ -363,3 +363,58 @@ test("compiler rejects two-file compare when dataset lengths differ", async () =
 
   await assert.rejects(() => compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir }), /equal dataset lengths/);
 });
+
+test("compiler rejects compare rows with blank source doc_id before pairing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPath = join(dir, "dataset.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_blank_source",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "by_index"
+      }
+    })
+  );
+  await writeFile(dataPath, ["doc_id,text", ",Output A1", "a2,Output A2"].join("\n"));
+
+  await assert.rejects(() => compileStudy({ specPath, datasetPath: dataPath, outDir }), /Every document needs doc_id/);
+});
+
+test("compiler rejects duplicate source doc_id values before two-file pairing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPathA = join(dir, "dataset_a.csv");
+  const dataPathB = join(dir, "dataset_b.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "cmp_dupe_source",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "two_file",
+        policy: "by_index"
+      }
+    })
+  );
+  await writeFile(dataPathA, ["doc_id,text", "a1,Output A1", "a1,Output A1 second"].join("\n"));
+  await writeFile(dataPathB, ["doc_id,text", "b1,Output B1", "b2,Output B2"].join("\n"));
+
+  await assert.rejects(
+    () => compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir }),
+    /Duplicate doc_id detected: a1/
+  );
+});
