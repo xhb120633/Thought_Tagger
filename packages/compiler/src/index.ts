@@ -8,6 +8,7 @@ import {
 } from "@thought-tagger/core";
 import { buildAssignmentManifest } from "@thought-tagger/workplan";
 import { outputPath, readDocuments, readStudySpec, writeCsv, writeJson, writeJsonl } from "./io.js";
+import { writeSessionBundle } from "./session.js";
 
 export interface CompileInput {
   specPath: string;
@@ -56,6 +57,8 @@ export async function compileStudy(input: CompileInput): Promise<void> {
       event_payload: {}
     }))
   );
+
+  await writeSessionBundle(input.outDir, spec, units);
 
   if (spec.workplan) {
     const assignmentRows = buildAssignmentManifest(units, spec.workplan);

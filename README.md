@@ -24,6 +24,7 @@ This repository includes:
     - `annotation_template.csv`
     - `event_log_template.jsonl`
     - `assignment_manifest.jsonl` (when `workplan` is configured)
+    - `webapp/` runnable local annotator bundle (`index.html`, `app.js`, `styles.css`, `study-bundle.json`)
 - `@thought-tagger/workplan`
   - Deterministic assignment manifest expansion with round-robin replication
 

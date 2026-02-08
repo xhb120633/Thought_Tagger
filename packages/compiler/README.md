@@ -23,3 +23,4 @@ npx thought-tagger-compile --spec <spec.json> --dataset <dataset.csv|dataset.jso
 - `annotation_template.csv`
 - `event_log_template.jsonl`
 - `assignment_manifest.jsonl` (optional; emitted when `workplan` is present in study spec)
+- `webapp/index.html`, `webapp/app.js`, `webapp/styles.css`, `webapp/study-bundle.json` (runnable local annotator bundle)

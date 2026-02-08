@@ -11,6 +11,9 @@
     "build": "npm run build -w @thought-tagger/core && npm run build -w @thought-tagger/workplan && npm run build -w @thought-tagger/compiler",
     "test": "npm run build && npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/workplan && npm run test -w @thought-tagger/compiler",
     "validate:examples": "node tools/validate-examples.mjs",
-    "check:all": "npm test && npm run build -w @thought-tagger/studio && npm run validate:examples"
+    "check:all": "npm test && npm run build -w @thought-tagger/studio && npm run validate:examples",
+    "validate:annotation": "node tools/validate-annotation-table.mjs",
+    "validate:events": "node tools/validate-event-log.mjs",
+    "session:cycle": "node tools/run-session-cycle.mjs"
   }
 }
