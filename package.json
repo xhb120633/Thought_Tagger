@@ -8,9 +8,10 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w @thought-tagger/core && npm run build -w @thought-tagger/workplan && npm run build -w @thought-tagger/compiler",
-    "test": "npm run build && npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/workplan && npm run test -w @thought-tagger/compiler",
+    "build": "npm run build -w @thought-tagger/core && npm run build -w @thought-tagger/workplan && npm run build -w @thought-tagger/compiler && npm run build -w @thought-tagger/exporter-webapp && npm run build -w @thought-tagger/exporter-jspsych && npm run build -w @thought-tagger/exporter-prolific",
+    "test": "npm run build && npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/workplan && npm run test -w @thought-tagger/compiler && npm run test -w @thought-tagger/exporter-webapp && npm run test -w @thought-tagger/exporter-jspsych && npm run test -w @thought-tagger/exporter-prolific",
     "validate:examples": "node tools/validate-examples.mjs",
-    "check:all": "npm test && npm run build -w @thought-tagger/studio && npm run validate:examples"
+    "check:all": "npm test && npm run build -w @thought-tagger/studio && npm run validate:examples",
+    "test:exporters": "npm run build -w @thought-tagger/exporter-webapp && npm run build -w @thought-tagger/exporter-jspsych && npm run build -w @thought-tagger/exporter-prolific && npm run test -w @thought-tagger/exporter-webapp && npm run test -w @thought-tagger/exporter-jspsych && npm run test -w @thought-tagger/exporter-prolific"
   }
 }
