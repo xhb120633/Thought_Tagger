@@ -69,8 +69,14 @@ export interface StudySpec {
 export interface InputDocument {
   doc_id: string;
   text: string;
+  target_spans?: TargetSpan[];
   pair_id?: string;
   meta?: Record<string, string | number | boolean | null>;
+}
+
+export interface TargetSpan {
+  char_start: number;
+  char_end: number;
 }
 
 export interface DerivedUnit {

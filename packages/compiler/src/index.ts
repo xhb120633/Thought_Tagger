@@ -26,14 +26,14 @@ export async function compileStudy(input: CompileInput): Promise<void> {
 
   if (spec.task_type === "compare") {
     // Validate raw dataset rows before compare pairing rewrites doc_id values.
-    assertValidDocuments(datasets.primary);
+    assertValidDocuments(datasets.primary, spec.unitization_mode);
     if (datasets.secondary.length > 0) {
-      assertValidDocuments(datasets.secondary);
+      assertValidDocuments(datasets.secondary, spec.unitization_mode);
     }
   }
 
   const documents = buildCompilationDocuments(spec, datasets.primary, datasets.secondary, input.datasetPathB);
-  assertValidDocuments(documents);
+  assertValidDocuments(documents, spec.unitization_mode);
 
   const units = deriveUnits(documents, spec.unitization_mode);
 
