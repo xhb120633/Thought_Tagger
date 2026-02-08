@@ -1,6 +1,32 @@
 export type TaskType = "label" | "annotate" | "compare";
 export type UnitizationMode = "document" | "sentence_step" | "target_span";
 export type RunMode = "participant" | "ra";
+export type QuestionResponseType = "single_select" | "multi_select" | "free_text" | "choice" | "choice_with_rationale";
+
+export type QuestionOption = {
+  value: string;
+  label: string;
+  description?: string;
+};
+
+export type ShowIfCondition = {
+  question_id: string;
+  equals: string;
+};
+
+export type RubricQuestion = {
+  question_id: string;
+  prompt: string;
+  required?: boolean;
+  help_text?: string;
+  response_type: QuestionResponseType;
+  options?: QuestionOption[];
+  min_select?: number;
+  max_select?: number;
+  max_chars?: number;
+  placeholder?: string;
+  show_if?: ShowIfCondition;
+};
 
 export type StudySpec = {
   study_id: string;
@@ -8,12 +34,61 @@ export type StudySpec = {
   task_type: TaskType;
   unitization_mode: UnitizationMode;
   run_mode: RunMode;
+  questions?: RubricQuestion[];
   workplan?: {
     annotator_ids: string[];
     replication_factor?: number;
     assignment_strategy?: "round_robin";
   };
 };
+
+export function parseRubricQuestions(rubricText: string, taskType: TaskType): RubricQuestion[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rubricText);
+  } catch {
+    throw new Error("Rubric must be valid JSON");
+  }
+
+  const questions = extractQuestions(parsed);
+  validateQuestions(taskType, questions);
+  return questions;
+}
+
+function extractQuestions(rubricConfig: unknown): RubricQuestion[] {
+  if (Array.isArray(rubricConfig)) return rubricConfig as RubricQuestion[];
+  if (rubricConfig && typeof rubricConfig === "object" && Array.isArray((rubricConfig as { questions?: unknown }).questions)) {
+    return (rubricConfig as { questions: RubricQuestion[] }).questions;
+  }
+  throw new Error("Rubric JSON must be a questions array or an object with a questions array");
+}
+
+function validateQuestions(taskType: TaskType, questions: RubricQuestion[]): void {
+  const seenIds = new Set<string>();
+  for (const question of questions) {
+    if (!question.question_id?.trim()) throw new Error("questions[].question_id is required");
+    if (!question.prompt?.trim()) throw new Error(`Question ${question.question_id} requires a non-empty prompt`);
+    if (seenIds.has(question.question_id)) throw new Error(`Duplicate question_id detected: ${question.question_id}`);
+    seenIds.add(question.question_id);
+
+    if (taskType === "label") {
+      if (question.response_type !== "single_select" && question.response_type !== "multi_select") {
+        throw new Error(`Question ${question.question_id} has invalid response_type for label task`);
+      }
+      if (!question.options || question.options.length < 2) {
+        throw new Error(`Question ${question.question_id} must define at least two options`);
+      }
+    }
+
+    if (taskType === "annotate" && question.response_type !== "free_text") {
+      throw new Error(`Question ${question.question_id} has invalid response_type for annotate task`);
+    }
+
+    if (taskType === "compare" && question.response_type !== "choice" && question.response_type !== "choice_with_rationale") {
+      throw new Error(`Question ${question.question_id} has invalid response_type for compare task`);
+    }
+  }
+}
 
 export type InputDoc = { doc_id: string; text: string };
 export type Unit = {
@@ -180,7 +255,13 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
     out["assignment_manifest.jsonl"] = toJsonl(buildAssignmentManifest(units, spec.workplan));
   }
 
-  out["studio_bundle.json"] = JSON.stringify({ spec, docs, units, generated_files: Object.keys(out) }, null, 2);
+  out["studio_bundle.json"] = JSON.stringify({
+    spec,
+    rubric_config: { questions: spec.questions ?? [] },
+    docs,
+    units,
+    generated_files: Object.keys(out)
+  }, null, 2);
   return out;
 }
 

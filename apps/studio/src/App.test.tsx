@@ -24,12 +24,20 @@ describe("Studio interactions", () => {
     const { unmount } = render(<App />);
 
     const rubricArea = screen.getByLabelText("Rubric editor");
-    fireEvent.change(rubricArea, { target: { value: '{"criteria":[{"id":"persist"}]}' } });
+    fireEvent.change(rubricArea, {
+      target: {
+        value: '{"questions":[{"question_id":"persist","prompt":"Persist this rubric","response_type":"free_text"}]}'
+      }
+    });
 
     unmount();
     render(<App />);
 
-    expect(screen.getByDisplayValue('{"criteria":[{"id":"persist"}]}')).toBeTruthy();
+    expect(
+      screen.getByDisplayValue(
+        '{"questions":[{"question_id":"persist","prompt":"Persist this rubric","response_type":"free_text"}]}'
+      )
+    ).toBeTruthy();
   });
 
   it("exports compiler bundle artifacts", async () => {
@@ -47,5 +55,63 @@ describe("Studio interactions", () => {
     expect(clickSpy).toHaveBeenCalled();
 
     clickSpy.mockRestore();
+  });
+
+  it("includes edited rubric questions in exported studio bundle", async () => {
+    const user = userEvent.setup();
+    const blobs: Blob[] = [];
+    Object.defineProperty(URL, "createObjectURL", {
+      value: vi.fn((blob: Blob) => {
+        blobs.push(blob);
+        return `blob:mock-${blobs.length}`;
+      }),
+      writable: true
+    });
+    Object.defineProperty(URL, "revokeObjectURL", { value: vi.fn(), writable: true });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Rubric editor"), {
+      target: {
+        value: JSON.stringify({
+          questions: [
+            {
+              question_id: "q_custom",
+              prompt: "Custom rubric question",
+              response_type: "free_text"
+            }
+          ]
+        })
+      }
+    });
+
+    await user.click(screen.getByText("Export Compiler Bundle"));
+
+    const studioBundleBlob = blobs[blobs.length - 1];
+    const studioBundleText = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(studioBundleBlob);
+    });
+    const parsedBundle = JSON.parse(studioBundleText) as {
+      spec: { questions?: Array<{ question_id: string; prompt: string }> };
+      rubric_config: { questions: Array<{ question_id: string; prompt: string }> };
+    };
+
+    expect(parsedBundle.spec.questions?.[0].question_id).toBe("q_custom");
+    expect(parsedBundle.spec.questions?.[0].prompt).toBe("Custom rubric question");
+    expect(parsedBundle.rubric_config.questions[0].question_id).toBe("q_custom");
+  });
+
+  it("blocks export and shows clear error for invalid rubric JSON", () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText("Rubric editor"), {
+      target: { value: "{" }
+    });
+
+    expect(screen.getByText("Error: Rubric must be valid JSON")).toBeTruthy();
+    expect(screen.queryByText("Export Compiler Bundle")).toBeNull();
   });
 });
