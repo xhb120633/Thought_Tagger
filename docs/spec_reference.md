@@ -19,8 +19,6 @@ This document converts the design logics into an implementable baseline spec for
 - `ra`
 
 ### 1.4 Deferred to placeholders
-- Replication strategy implementation details
-- Work-distribution optimization details
 - Shared context mode for compare tasks
 
 These deferred items are tracked for post-1.0 planning in `docs/post_1_0_roadmap.md`.
@@ -131,6 +129,17 @@ Example:
 - Simpler linear progression default.
 
 ---
+
+
+## 5.3 Workplan assignment strategies
+- `round_robin` (default): rotate annotators by unit index; deterministic and simple.
+- `load_balanced`: deterministic least-loaded assignment with stable hash tie-breaking per `assignment_seed`.
+
+Common workplan fields:
+- `annotator_ids` (required)
+- `replication_factor` (optional, defaults to `1`)
+- `assignment_strategy` (optional, defaults to `round_robin`)
+- `assignment_seed` (optional, used by `load_balanced`; defaults to `thought-tagger-v1`)
 
 ## 6. Outputs (V1 Contract Targets)
 

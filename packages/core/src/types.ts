@@ -5,7 +5,8 @@ export type RunMode = "participant" | "ra";
 export interface StudyWorkplanConfig {
   annotator_ids: string[];
   replication_factor?: number;
-  assignment_strategy?: "round_robin";
+  assignment_strategy?: "round_robin" | "load_balanced";
+  assignment_seed?: string;
 }
 
 export type QuestionResponseType = "single_select" | "multi_select" | "free_text" | "choice" | "choice_with_rationale";

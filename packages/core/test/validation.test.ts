@@ -142,3 +142,38 @@ test("study spec rejects conditional flow with unknown parent option value", () 
     });
   }, /show_if.equals must match one of parent options/);
 });
+
+test("study spec allows load-balanced workplan strategy with seed", () => {
+  assert.doesNotThrow(() => {
+    assertValidStudySpec({
+      study_id: "s5",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "ra",
+      workplan: {
+        annotator_ids: ["ann_a", "ann_b"],
+        replication_factor: 1,
+        assignment_strategy: "load_balanced",
+        assignment_seed: "study-seed"
+      }
+    });
+  });
+});
+
+test("study spec rejects empty assignment_seed when provided", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s6",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "ra",
+      workplan: {
+        annotator_ids: ["ann_a", "ann_b"],
+        assignment_strategy: "load_balanced",
+        assignment_seed: ""
+      }
+    });
+  }, /assignment_seed cannot be empty/);
+});

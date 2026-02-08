@@ -1,8 +1,8 @@
-# ThoughtTagger — Design Logics + MVP Compiler Scaffold
+# ThoughtTagger — Design Logics + Production Compiler Toolkit
 
 ThoughtTagger is an open-source, spec-driven annotation system designed for think-aloud / chain-of-thought (CoT) data.
 
-## What is implemented now
+## Production baseline features
 
 ### Packages
 - `@thought-tagger/core`
@@ -19,7 +19,7 @@ ThoughtTagger is an open-source, spec-driven annotation system designed for thin
     - `event_log_template.jsonl`
     - `assignment_manifest.jsonl` (when `workplan` is configured)
 - `@thought-tagger/workplan`
-  - Deterministic assignment manifest expansion with round-robin replication
+  - Deterministic assignment manifest expansion with round-robin and load-balanced strategies
 
 ## Installation
 

@@ -1,3 +1,3 @@
 # @thought-tagger/workplan
 
-Owns partition, replication placeholders, and assignment manifest expansion logic.
+Owns deterministic assignment manifest expansion, including `round_robin` and `load_balanced` strategies with configurable replication.
