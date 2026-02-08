@@ -7,21 +7,24 @@ import {
   StudySpec
 } from "@thought-tagger/core";
 import { buildAssignmentManifest } from "@thought-tagger/workplan";
-import { outputPath, readDocuments, readStudySpec, writeCsv, writeJson, writeJsonl } from "./io.js";
+import { outputPath, readDatasetBundle, readStudySpec, writeCsv, writeJson, writeJsonl } from "./io.js";
 import { readFile } from "node:fs/promises";
 
 export interface CompileInput {
   specPath: string;
   datasetPath: string;
+  datasetPathB?: string;
   outDir: string;
   contextSidecarPath?: string;
 }
 
 export async function compileStudy(input: CompileInput): Promise<void> {
   const spec = await readStudySpec(input.specPath);
-  const documents = await readDocuments(input.datasetPath);
+  const datasets = await readDatasetBundle(input.datasetPath, input.datasetPathB);
 
   assertValidStudySpec(spec);
+
+  const documents = buildCompilationDocuments(spec, datasets.primary, datasets.secondary, input.datasetPathB);
   assertValidDocuments(documents);
 
   const units = deriveUnits(documents, spec.unitization_mode);
@@ -69,6 +72,110 @@ export async function compileStudy(input: CompileInput): Promise<void> {
   if (compareContextRows.length > 0) {
     await writeJsonl(outputPath(input.outDir, "compare_context.jsonl"), compareContextRows);
   }
+}
+
+function buildCompilationDocuments(
+  spec: StudySpec,
+  primaryDocuments: InputDocument[],
+  secondaryDocuments: InputDocument[],
+  datasetPathB?: string
+): InputDocument[] {
+  if (spec.task_type !== "compare") {
+    if (datasetPathB) throw new Error("Secondary dataset input is only supported when task_type=compare");
+    return primaryDocuments;
+  }
+
+  const pairing = spec.compare_pairing;
+  if (!pairing) {
+    throw new Error("compare_pairing is required when task_type=compare");
+  }
+
+  if (pairing.mode === "single_file") {
+    if (secondaryDocuments.length > 0) {
+      throw new Error("compare_pairing.mode=single_file does not support a secondary dataset");
+    }
+    return createComparePairs(primaryDocuments, primaryDocuments, pairing.policy, pairing.seed ?? spec.study_id, true);
+  }
+
+  if (secondaryDocuments.length === 0) {
+    throw new Error("compare_pairing.mode=two_file requires a secondary dataset input");
+  }
+
+  return createComparePairs(primaryDocuments, secondaryDocuments, pairing.policy, pairing.seed ?? spec.study_id, false);
+}
+
+function createComparePairs(
+  leftInput: InputDocument[],
+  rightInput: InputDocument[],
+  policy: "by_index" | "random_pair",
+  seed: string,
+  singleFileMode: boolean
+): InputDocument[] {
+  if (leftInput.length === 0) {
+    throw new Error("Compare datasets must include at least one document");
+  }
+
+  if (singleFileMode) {
+    if (leftInput.length % 2 !== 0) {
+      throw new Error("compare_pairing.mode=single_file requires an even number of documents");
+    }
+    const pool = policy === "random_pair" ? seededShuffle(leftInput, seed) : [...leftInput];
+    const pairs: [InputDocument, InputDocument][] = [];
+    for (let i = 0; i < pool.length; i += 2) {
+      pairs.push([pool[i], pool[i + 1]]);
+    }
+    return flattenPairRows(pairs);
+  }
+
+  if (leftInput.length !== rightInput.length) {
+    throw new Error("compare_pairing.mode=two_file requires equal dataset lengths");
+  }
+
+  const rightPool = policy === "random_pair" ? seededShuffle(rightInput, seed) : [...rightInput];
+  const pairs: [InputDocument, InputDocument][] = leftInput.map((leftDoc, index) => [leftDoc, rightPool[index]]);
+  return flattenPairRows(pairs);
+}
+
+function flattenPairRows(pairs: [InputDocument, InputDocument][]): InputDocument[] {
+  return pairs.flatMap(([docA, docB], index) => {
+    const pairId = `pair_${index + 1}`;
+    return [
+      {
+        ...docA,
+        doc_id: `${pairId}:A`,
+        pair_id: pairId,
+        meta: { ...(docA.meta ?? {}), compare_source_doc_id: docA.doc_id, compare_slot: "A" }
+      },
+      {
+        ...docB,
+        doc_id: `${pairId}:B`,
+        pair_id: pairId,
+        meta: { ...(docB.meta ?? {}), compare_source_doc_id: docB.doc_id, compare_slot: "B" }
+      }
+    ];
+  });
+}
+
+function seededShuffle<T>(items: T[], seed: string): T[] {
+  const result = [...items];
+  let state = seedState(seed);
+
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const j = state % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+function seedState(seed: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 async function buildCompareContextRows(spec: StudySpec, units: DerivedUnit[], contextSidecarPath?: string): Promise<unknown[]> {
@@ -135,6 +242,8 @@ function createManifest(spec: StudySpec, docs: InputDocument[], units: DerivedUn
     question_count: spec.questions?.length ?? 0,
     conditional_question_count: (spec.questions ?? []).filter((question) => question.show_if).length,
     compare_context_mode: spec.compare_context?.mode ?? null,
+    compare_pairing_mode: spec.compare_pairing?.mode ?? null,
+    compare_pairing_policy: spec.compare_pairing?.policy ?? null,
     document_count: docs.length,
     unit_count: units.length,
     build_id: deterministicBuildId

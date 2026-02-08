@@ -4,6 +4,10 @@
   "task_type": "compare",
   "unitization_mode": "document",
   "run_mode": "participant",
+  "compare_pairing": {
+    "mode": "two_file",
+    "policy": "by_index"
+  },
   "compare_context": {
     "mode": "inline_meta",
     "context_meta_key": "shared_context"

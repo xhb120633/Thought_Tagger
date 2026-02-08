@@ -219,6 +219,10 @@ test("study spec allows compare inline context configuration", () => {
       task_type: "compare",
       unitization_mode: "document",
       run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "by_index"
+      },
       compare_context: {
         mode: "inline_meta",
         context_meta_key: "prompt"
@@ -235,9 +239,44 @@ test("study spec rejects compare sidecar context missing fields", () => {
       task_type: "compare",
       unitization_mode: "document",
       run_mode: "participant",
+      compare_pairing: {
+        mode: "two_file",
+        policy: "random_pair",
+        seed: "seed-1"
+      },
       compare_context: {
         mode: "sidecar"
       }
     });
   }, /sidecar_pair_id_field is required/);
+});
+
+
+test("study spec rejects compare task without compare_pairing", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s11",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant"
+    });
+  }, /compare_pairing is required/);
+});
+
+test("study spec rejects empty compare pairing seed", () => {
+  assert.throws(() => {
+    assertValidStudySpec({
+      study_id: "s12",
+      rubric_version: "v1",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant",
+      compare_pairing: {
+        mode: "single_file",
+        policy: "random_pair",
+        seed: ""
+      }
+    });
+  }, /compare_pairing.seed cannot be empty/);
 });

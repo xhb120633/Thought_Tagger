@@ -3,6 +3,8 @@ import { InputDocument, RubricQuestion, StudySpec, TaskType } from "./types.js";
 const TASK_TYPES = new Set(["label", "annotate", "compare"]);
 const UNITIZATION_MODES = new Set(["document", "sentence_step", "target_span"]);
 const RUN_MODES = new Set(["participant", "ra"]);
+const COMPARE_PAIRING_MODES = new Set(["single_file", "two_file"]);
+const COMPARE_PAIRING_POLICIES = new Set(["by_index", "random_pair"]);
 
 export function assertValidStudySpec(spec: StudySpec): void {
   if (!spec.study_id.trim()) throw new Error("study_id is required");
@@ -17,6 +19,24 @@ export function assertValidStudySpec(spec: StudySpec): void {
     assertValidQuestions(spec.task_type, spec.questions);
   }
 
+
+  if (spec.task_type === "compare") {
+    if (!spec.compare_pairing) {
+      throw new Error("compare_pairing is required when task_type=compare");
+    }
+
+    if (!COMPARE_PAIRING_MODES.has(spec.compare_pairing.mode)) {
+      throw new Error(`Unsupported compare_pairing.mode: ${spec.compare_pairing.mode}`);
+    }
+
+    if (!COMPARE_PAIRING_POLICIES.has(spec.compare_pairing.policy)) {
+      throw new Error(`Unsupported compare_pairing.policy: ${spec.compare_pairing.policy}`);
+    }
+
+    if (spec.compare_pairing.seed !== undefined && !spec.compare_pairing.seed.trim()) {
+      throw new Error("compare_pairing.seed cannot be empty when provided");
+    }
+  }
 
   if (spec.task_type === "compare" && spec.compare_context) {
     if (spec.compare_context.mode === "inline_meta") {
