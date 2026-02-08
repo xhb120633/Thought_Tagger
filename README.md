@@ -1,41 +1,67 @@
-# ThoughtTagger — Design Logics + Production Compiler Toolkit
+# ThoughtTagger — Research Annotation Toolkit
 
-ThoughtTagger is an open-source, spec-driven annotation system designed for think-aloud / chain-of-thought (CoT) data.
+ThoughtTagger helps psychology researchers turn a study design + text dataset into annotation-ready study files.
 
-## Production baseline features
+## Current project status (March 2026)
 
-### Packages
-- `@thought-tagger/core`
-  - Study spec types and validation
-  - Deterministic unitization for `document`, `sentence_step`, `target_span`
-  - Segmentation-version hashing for deterministic outputs
-- `@thought-tagger/compiler`
-  - Reads `study.spec.json` and dataset (`.jsonl` / `.csv`)
-  - Validates input contracts
-  - Generates output artifacts:
-    - `manifest.json`
-    - `units.jsonl`
-    - `annotation_template.csv`
-    - `event_log_template.jsonl`
-    - `assignment_manifest.jsonl` (when `workplan` is configured)
-- `@thought-tagger/workplan`
-  - Deterministic assignment manifest expansion with round-robin and load-balanced strategies
+ThoughtTagger is in a **researcher-ready release candidate** state:
 
-## Installation
+- ✅ Core compile/export pipeline is stable and tested.
+- ✅ Three deployment paths exist today: local demo, personal server (RA mode), and participant platforms (Pavlovia/Prolific).
+- ✅ Deterministic assignment/workplan features are implemented.
+- ⚠️ Deployment operations (auth, backups, monitoring, secure hosting) are still your lab/institution responsibility.
+
+See:
+- [Production readiness](docs/production_readiness.md)
+- [Active roadmap](docs/post_1_0_roadmap.md)
+
+## Fast start
 
 ```bash
 npm install
-```
-
-## Quickstart
-
-```bash
 npm run build
 npm run compile -- \
   --spec examples/sentence_labeling/study.spec.json \
   --dataset examples/sentence_labeling/dataset.jsonl \
   --out examples/sentence_labeling/out
 ```
+
+## Pick a deployment path
+
+1. **Local (testing/demo):** run on your laptop for piloting and method demos.  
+   → [Local deployment quick path](docs/deployment/self_host.md)
+2. **Personal server (RA mode):** host on your own server for trained research assistants.  
+   → [Personal server deployment](docs/deployment/self_host.md)
+3. **Participant platform (Pavlovia/Prolific):** package for external participants and recruitment workflows.  
+   → [Pavlovia guide](docs/deployment/pavlovia.md), [Prolific guide](docs/deployment/prolific.md)
+
+## Documentation index
+
+### Start here (non-technical)
+- [Researcher quickstart](docs/quickstart.md)
+- [Installation guide](docs/installation.md)
+- [Study workflow: dataset → deployment → results](docs/workflow_dataset_to_results.md)
+
+### Study design and specs
+- [Spec reference](docs/spec_reference.md)
+- [Design logics](docs/design_logics.md)
+
+### Deployment
+- [Self-host / local / personal server](docs/deployment/self_host.md)
+- [Pavlovia deployment](docs/deployment/pavlovia.md)
+- [Prolific deployment](docs/deployment/prolific.md)
+
+### Readiness and operations
+- [Production readiness](docs/production_readiness.md)
+- [Active roadmap](docs/post_1_0_roadmap.md)
+- [Release policy](docs/release_policy.md)
+- [Security & compliance baseline](docs/security_compliance.md)
+- [Operations runbook](docs/operations_runbook.md)
+- [Environment matrix](docs/environment_matrix.md)
+- [Dependency audit process](docs/dependency_audit.md)
+
+### Troubleshooting
+- [Troubleshooting guide](docs/troubleshooting.md)
 
 ## Useful commands
 
@@ -47,50 +73,3 @@ npm run validate:examples
 npm run smoke:exporters
 npm run check:all
 ```
-
-## Documentation index
-
-### Getting started
-- [Installation guide](docs/installation.md)
-- [Quickstart tutorial](docs/quickstart.md)
-- [Spec reference](docs/spec_reference.md)
-
-### Deployment guides
-- [Self-hosted web workspace deployment](docs/deployment/self_host.md)
-- [Pavlovia/jsPsych deployment](docs/deployment/pavlovia.md)
-- [Prolific integration deployment](docs/deployment/prolific.md)
-
-### Production readiness
-- [Production readiness gap analysis](docs/production_readiness.md)
-- [Post-1.0 roadmap for deferred scope](docs/post_1_0_roadmap.md)
-- [Release policy](docs/release_policy.md)
-- [Security and compliance baseline](docs/security_compliance.md)
-- [Operations runbook](docs/operations_runbook.md)
-- [Environment configuration matrix](docs/environment_matrix.md)
-- [Dependency audit and triage process](docs/dependency_audit.md)
-
-### End-to-end workflow
-- [Raw dataset → deployed workspace → collected results walkthrough](docs/workflow_dataset_to_results.md)
-
-### Troubleshooting
-- [Troubleshooting guide](docs/troubleshooting.md)
-
-## Repository framework
-
-```
-ThoughtTagger/
-├─ packages/
-│  ├─ core/
-│  ├─ compiler/
-│  ├─ workplan/
-│  ├─ exporters/
-│  │   ├─ webapp/
-│  │   ├─ jspsych/
-│  │   └─ prolific/
-├─ apps/
-│  └─ studio/
-├─ examples/
-└─ docs/
-```
-
-See [docs/spec_reference.md](docs/spec_reference.md) for baseline V1 requirements and constraints.

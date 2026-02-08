@@ -1,14 +1,14 @@
-# Prolific Deployment (Completion + Redirect Workflow)
+# Deployment Guide: Prolific (Participant Recruitment)
 
-This guide packages a deployable workspace and validates fields commonly needed by Prolific studies.
+Use this when recruiting participants through Prolific.
 
-## 1) Build packages
+## Step 1 — Build toolkit
 
 ```bash
 npm run build
 ```
 
-## 2) Compile a dataset for deployment
+## Step 2 — Compile study outputs
 
 ```bash
 npm run compile -- \
@@ -17,7 +17,7 @@ npm run compile -- \
   --out examples/ab_compare_cot/out
 ```
 
-## 3) Build deployment directory
+## Step 3 — Generate Prolific-ready package
 
 ```bash
 node packages/exporters/prolific/src/cli.mjs \
@@ -27,25 +27,32 @@ node packages/exporters/prolific/src/cli.mjs \
 cp examples/ab_compare_cot/out/* deployment/prolific_workspace/
 ```
 
-## 4) Validate assignment + event templates (session tracking support)
+Replace `ABC123` with your real completion code.
+
+## Step 4 — Validate required files
 
 ```bash
 test -f deployment/prolific_workspace/assignment_manifest.jsonl
 test -f deployment/prolific_workspace/event_log_template.jsonl
-node -e "const fs=require('fs'); const p='deployment/prolific_workspace/assignment_manifest.jsonl'; const rows=fs.readFileSync(p,'utf8').trim().split('\n').filter(Boolean); if(!rows.length) throw new Error('assignment_manifest.jsonl has no rows'); const first=JSON.parse(rows[0]); if(!first.assignment_id||!first.annotator_id){throw new Error('assignment row missing IDs')} console.log('assignment row ok:', first.assignment_id, first.annotator_id)"
+node -e "const fs=require('fs'); const rows=fs.readFileSync('deployment/prolific_workspace/assignment_manifest.jsonl','utf8').trim().split('\n').filter(Boolean); if(!rows.length) throw new Error('No assignments found'); const first=JSON.parse(rows[0]); if(!first.assignment_id||!first.annotator_id) throw new Error('Missing assignment fields'); console.log('assignment manifest OK')"
 ```
 
-## 5) Local validation run
+## Step 5 — Optional local smoke test
 
 ```bash
 npx serve deployment/prolific_workspace -l 4175
 ```
 
-Open `http://localhost:4175` and complete a dry-run session.
+Open: `http://localhost:4175`
 
-## 6) Prolific integration checklist
+## Step 6 — Connect with Prolific
 
-- Configure your Prolific study URL to point to your hosted workspace URL.
-- Preserve query params (`PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID`) through participant flow.
-- At completion, redirect participants to your Prolific completion URL with a valid completion code.
-- Store generated event logs and assignment-level outputs for auditing.
+- Use your hosted study URL in Prolific.
+- Preserve query params (`PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID`).
+- Redirect participants to the Prolific completion URL when finished.
+
+## Researcher checklist
+
+- [ ] Completion code is correct.
+- [ ] Participant IDs/session IDs are preserved.
+- [ ] Pilot participants can finish and be redirected successfully.

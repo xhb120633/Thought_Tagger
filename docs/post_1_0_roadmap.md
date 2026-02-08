@@ -1,31 +1,52 @@
-# Post-1.0 Roadmap (Deferred Scope)
+# Active Roadmap Toward a Fully Researcher-Usable Product
 
-This document tracks features explicitly deferred from the V1 baseline and referenced by the production readiness gap analysis.
+This roadmap focuses on practical needs for psychology researchers who may have minimal coding background.
 
-## Purpose
+## Roadmap status legend
 
-- Keep V1 contracts stable while making deferred work visible.
-- Provide a planning anchor for issues and milestone sequencing.
-- Make scope decisions explicit for production signoff.
+- **Active:** planned and not yet complete
+- **Queued:** next after active items
+- **Completed:** done and shipped
 
-## Roadmap items
+## Active plans
 
-### R1. Replication strategy expansion ✅ Completed
-**Status:** implemented with `weighted` and `stratified_round_robin` plus deterministic tie-breaking and test coverage.
+### A1. One-page "which deployment should I pick?" onboarding (Active)
+**Goal:** reduce setup confusion for first-time researchers.  
+**Deliverable:** clear decision flow that maps to local demo, RA server, Pavlovia, and Prolific.  
+**Why it matters:** most support requests come from deployment-path uncertainty.
 
+### A2. Researcher-first checklists for launch readiness (Active)
+**Goal:** make pre-launch quality checks understandable without engineering jargon.  
+**Deliverable:** per-platform checklists (pilot complete, IDs preserved, output verified, backup plan set).
 
-### R4. Shared context in compare tasks ✅ Completed
-**Status:** compare specs now support shared context via `compare_context` and compiler emits `compare_context.jsonl` plus context-ready template columns.
+### A3. Minimal "handoff bundle" standard for RAs (Active)
+**Goal:** allow a PI to hand off a deployable package to RAs with low friction.  
+**Deliverable:** documented folder standard + short handoff instructions.
 
-### R5. Shared context sidecar file support ✅ Completed
-**Status:** compiler accepts `--context-sidecar` JSONL and validates deterministic `pair_id -> context` alignment before emitting context artifacts.
+## Queued plans
 
-## Priority and sequencing
+### Q1. Optional managed deployment templates (Queued)
+- Static-host templates (e.g., Nginx/Cloud storage/CDN) with copy-paste defaults.
 
-All previously deferred items have now been implemented.
+### Q2. Guided QA script for non-technical teams (Queued)
+- A single command that checks expected files and key fields for each deployment mode.
 
-## Tracking model
+### Q3. Data management templates (Queued)
+- Plain-language SOP templates for retention, backup cadence, and incident logging.
 
-- Each roadmap item should map to one milestone and one integration test suite.
-- Any schema changes must include migration notes and changelog entries.
-- Roadmap status should be reviewed at every release cut.
+## Completed items
+
+### C1. Replication strategy expansion ✅
+Implemented `weighted` and `stratified_round_robin` with deterministic tie-breaking and tests.
+
+### C2. Compare-task shared context ✅
+Implemented `compare_context` support and context-aware compiler outputs.
+
+### C3. Context sidecar support ✅
+Implemented deterministic `--context-sidecar` handling with alignment validation.
+
+## Planning notes
+
+- Roadmap should prioritize **lower cognitive load** over feature count.
+- Every roadmap item should map to a concrete researcher pain point.
+- Status is reviewed at each release cut.
