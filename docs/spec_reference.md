@@ -21,8 +21,9 @@ This document converts the design logics into an implementable baseline spec for
 ### 1.4 Deferred to placeholders
 - Replication strategy implementation details
 - Work-distribution optimization details
-- Conditional question flows
 - Shared context mode for compare tasks
+
+These deferred items are tracked for post-1.0 planning in `docs/post_1_0_roadmap.md`.
 
 ---
 
@@ -52,6 +53,8 @@ Presentation randomization:
 Placeholder (not implemented in V1):
 - Shared context sidecar file that injects aligned context for each comparison pair.
 
+Roadmap tracking: `docs/post_1_0_roadmap.md`.
+
 ---
 
 ## 3. Rubric / Question Model
@@ -80,8 +83,15 @@ Each question:
 - built-in options may include `A`, `B`, optionally `tie`
 - rationale can be optional or required
 
-Placeholder (not implemented in V1):
-- Conditional branching (`if answer to Q1 == X then show Q2`).
+Conditional branching support is available through per-question `show_if` rules (see example below).
+
+Example:
+```json
+{
+  "question_id": "q2",
+  "show_if": { "question_id": "q1", "equals": "unclear" }
+}
+```
 
 ---
 

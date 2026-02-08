@@ -8,12 +8,40 @@ export interface StudyWorkplanConfig {
   assignment_strategy?: "round_robin";
 }
 
+export type QuestionResponseType = "single_select" | "multi_select" | "free_text" | "choice" | "choice_with_rationale";
+
+export interface QuestionOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+export interface ShowIfCondition {
+  question_id: string;
+  equals: string;
+}
+
+export interface RubricQuestion {
+  question_id: string;
+  prompt: string;
+  required?: boolean;
+  help_text?: string;
+  response_type: QuestionResponseType;
+  options?: QuestionOption[];
+  min_select?: number;
+  max_select?: number;
+  max_chars?: number;
+  placeholder?: string;
+  show_if?: ShowIfCondition;
+}
+
 export interface StudySpec {
   study_id: string;
   rubric_version: string;
   task_type: TaskType;
   unitization_mode: UnitizationMode;
   run_mode: RunMode;
+  questions?: RubricQuestion[];
   workplan?: StudyWorkplanConfig;
 }
 

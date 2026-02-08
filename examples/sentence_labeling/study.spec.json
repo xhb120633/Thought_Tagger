@@ -4,6 +4,33 @@
   "task_type": "label",
   "unitization_mode": "sentence_step",
   "run_mode": "ra",
+  "questions": [
+    {
+      "question_id": "q_primary",
+      "prompt": "How well-formed is this sentence?",
+      "required": true,
+      "response_type": "single_select",
+      "options": [
+        { "value": "clear", "label": "Clear" },
+        { "value": "unclear", "label": "Unclear" }
+      ]
+    },
+    {
+      "question_id": "q_unclear_reason",
+      "prompt": "Why is it unclear?",
+      "required": false,
+      "response_type": "multi_select",
+      "options": [
+        { "value": "grammar", "label": "Grammar issues" },
+        { "value": "missing_context", "label": "Missing context" },
+        { "value": "ambiguous", "label": "Ambiguous wording" }
+      ],
+      "show_if": {
+        "question_id": "q_primary",
+        "equals": "unclear"
+      }
+    }
+  ],
   "workplan": {
     "annotator_ids": ["ann_a", "ann_b"],
     "replication_factor": 1,

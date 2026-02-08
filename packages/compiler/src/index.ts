@@ -71,6 +71,8 @@ function createManifest(spec: StudySpec, docs: InputDocument[], units: DerivedUn
     task_type: spec.task_type,
     unitization_mode: spec.unitization_mode,
     run_mode: spec.run_mode,
+    question_count: spec.questions?.length ?? 0,
+    conditional_question_count: (spec.questions ?? []).filter((question) => question.show_if).length,
     document_count: docs.length,
     unit_count: units.length,
     build_id: deterministicBuildId
