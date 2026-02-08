@@ -418,3 +418,30 @@ test("compiler rejects duplicate source doc_id values before two-file pairing", 
     /Duplicate doc_id detected: a1/
   );
 });
+
+
+test("compiler rejects secondary dataset input for non-compare studies before dataset-b row validation", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tt-"));
+  const specPath = join(dir, "spec.json");
+  const dataPathA = join(dir, "dataset_a.csv");
+  const dataPathB = join(dir, "dataset_b.csv");
+  const outDir = join(dir, "out");
+
+  await writeFile(
+    specPath,
+    JSON.stringify({
+      study_id: "label_with_b",
+      rubric_version: "v1",
+      task_type: "label",
+      unitization_mode: "document",
+      run_mode: "participant"
+    })
+  );
+  await writeFile(dataPathA, ["doc_id,text", "a1,Output A1"].join("\n"));
+  await writeFile(dataPathB, ["doc_id,text", ",Malformed secondary row"].join("\n"));
+
+  await assert.rejects(
+    () => compileStudy({ specPath, datasetPath: dataPathA, datasetPathB: dataPathB, outDir }),
+    /Secondary dataset input is only supported when task_type=compare/
+  );
+});
