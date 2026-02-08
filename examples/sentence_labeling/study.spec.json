@@ -3,5 +3,10 @@
   "rubric_version": "v1",
   "task_type": "label",
   "unitization_mode": "sentence_step",
-  "run_mode": "ra"
+  "run_mode": "ra",
+  "workplan": {
+    "annotator_ids": ["ann_a", "ann_b"],
+    "replication_factor": 1,
+    "assignment_strategy": "round_robin"
+  }
 }

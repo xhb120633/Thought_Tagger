@@ -20,6 +20,9 @@ This repository currently includes:
     - `units.jsonl`
     - `annotation_template.csv`
     - `event_log_template.jsonl`
+    - `assignment_manifest.jsonl` (when `workplan` is configured in spec)
+- `@thought-tagger/workplan`
+  - Deterministic assignment manifest expansion with round-robin replication
 
 ## Quickstart
 

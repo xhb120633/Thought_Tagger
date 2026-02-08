@@ -12,6 +12,30 @@ export function assertValidStudySpec(spec: StudySpec): void {
     throw new Error(`Unsupported unitization_mode: ${spec.unitization_mode}`);
   }
   if (!RUN_MODES.has(spec.run_mode)) throw new Error(`Unsupported run_mode: ${spec.run_mode}`);
+  if (spec.workplan) {
+    if (!Array.isArray(spec.workplan.annotator_ids) || spec.workplan.annotator_ids.length === 0) {
+      throw new Error("workplan.annotator_ids must include at least one annotator id");
+    }
+    const seen = new Set<string>();
+    for (const id of spec.workplan.annotator_ids) {
+      if (!id.trim()) throw new Error("workplan.annotator_ids cannot include empty values");
+      if (seen.has(id)) throw new Error(`Duplicate workplan annotator_id detected: ${id}`);
+      seen.add(id);
+    }
+
+    if (spec.workplan.replication_factor !== undefined) {
+      if (!Number.isInteger(spec.workplan.replication_factor) || spec.workplan.replication_factor < 1) {
+        throw new Error("workplan.replication_factor must be an integer >= 1");
+      }
+      if (spec.workplan.replication_factor > spec.workplan.annotator_ids.length) {
+        throw new Error("workplan.replication_factor cannot exceed annotator count");
+      }
+    }
+
+    if (spec.workplan.assignment_strategy && spec.workplan.assignment_strategy !== "round_robin") {
+      throw new Error(`Unsupported workplan.assignment_strategy: ${spec.workplan.assignment_strategy}`);
+    }
+  }
 }
 
 export function assertValidDocuments(documents: InputDocument[]): void {

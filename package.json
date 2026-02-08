@@ -8,7 +8,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w @thought-tagger/core && npm run build -w @thought-tagger/compiler",
-    "test": "npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/compiler"
+    "build": "npm run build -w @thought-tagger/core && npm run build -w @thought-tagger/workplan && npm run build -w @thought-tagger/compiler",
+    "test": "npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/workplan && npm run test -w @thought-tagger/compiler"
   }
 }
