@@ -85,11 +85,18 @@ function assertValidQuestionByTaskType(taskType: TaskType, question: RubricQuest
     }
     assertHasValidOptions(question);
     if (question.response_type === "multi_select") {
+      const optionCount = question.options?.length ?? 0;
       if (question.min_select !== undefined && (!Number.isInteger(question.min_select) || question.min_select < 0)) {
         throw new Error(`Question ${question.question_id} min_select must be an integer >= 0`);
       }
       if (question.max_select !== undefined && (!Number.isInteger(question.max_select) || question.max_select < 1)) {
         throw new Error(`Question ${question.question_id} max_select must be an integer >= 1`);
+      }
+      if (question.min_select !== undefined && question.min_select > optionCount) {
+        throw new Error(`Question ${question.question_id} min_select cannot exceed options length`);
+      }
+      if (question.max_select !== undefined && question.max_select > optionCount) {
+        throw new Error(`Question ${question.question_id} max_select cannot exceed options length`);
       }
       if (
         question.min_select !== undefined &&
