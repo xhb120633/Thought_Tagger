@@ -1,0 +1,20 @@
+{
+  "study_id": "sentence_labeling_demo",
+  "rubric_version": "v1",
+  "task_type": "label",
+  "unitization_mode": "sentence_step",
+  "run_mode": "ra",
+  "questions": [
+    {
+      "question_id": "q_quality",
+      "prompt": "How correct is this reasoning step?",
+      "response_type": "single_select",
+      "required": true,
+      "options": [
+        { "value": "correct", "label": "Correct" },
+        { "value": "partly_correct", "label": "Partly correct" },
+        { "value": "incorrect", "label": "Incorrect" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThoughtTagger Studio V1</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>ThoughtTagger V1 Studio</h1>
+      <p>Researcher setup + participant annotation workspace.</p>
+    </header>
+
+    <main>
+      <section id="setup-view" class="card">
+        <h2>1) Researcher Setup</h2>
+        <p>Create a runnable study from spec + dataset JSONL.</p>
+
+        <div class="grid2">
+          <div>
+            <h3>study.spec.json</h3>
+            <textarea id="spec-input"></textarea>
+          </div>
+          <div>
+            <h3>dataset.jsonl</h3>
+            <textarea id="dataset-input"></textarea>
+          </div>
+        </div>
+
+        <button id="create-study-btn">Create Study Runtime</button>
+        <p class="error" id="setup-error"></p>
+        <pre id="setup-result"></pre>
+      </section>
+
+      <section id="annotator-view" class="card hidden">
+        <h2>2) Annotation Workspace</h2>
+        <div class="controls">
+          <label>
+            Annotator ID
+            <input id="annotator-id" placeholder="ra_001" />
+          </label>
+          <button id="start-session-btn">Start Session</button>
+          <button id="save-session-btn">Save Session</button>
+          <button id="export-session-btn">Export JSON</button>
+        </div>
+
+        <p id="session-meta"></p>
+        <p class="error" id="annotator-error"></p>
+
+        <div class="workspace">
+          <aside>
+            <h3>Progress</h3>
+            <p id="progress"></p>
+            <div class="nav-buttons">
+              <button id="prev-btn">← Prev</button>
+              <button id="next-btn">Next →</button>
+            </div>
+            <h3>Document context</h3>
+            <pre id="doc-context"></pre>
+          </aside>
+
+          <section>
+            <h3>Current unit</h3>
+            <pre id="unit-text"></pre>
+            <div id="questions"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

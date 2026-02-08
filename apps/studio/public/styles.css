@@ -1,0 +1,18 @@
+:root { color-scheme: light; }
+body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f3f5fa; color: #1d2433; }
+header { padding: 20px 24px; background: #1b325f; color: white; }
+main { padding: 16px 24px 32px; display: grid; gap: 16px; }
+.card { background: white; border-radius: 12px; border: 1px solid #d9dce5; padding: 16px; }
+.hidden { display: none; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+textarea { width: 100%; min-height: 240px; font-family: ui-monospace, monospace; font-size: 12px; }
+button { background: #274b8a; color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+button.secondary { background: #525e75; }
+.controls { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-bottom: 8px; }
+.controls input { padding: 8px; border: 1px solid #c6cbda; border-radius: 8px; }
+.workspace { display: grid; grid-template-columns: 360px 1fr; gap: 16px; }
+aside pre, #unit-text { white-space: pre-wrap; background: #fafbff; border: 1px solid #d9dce5; border-radius: 8px; padding: 10px; min-height: 100px; }
+.question { border: 1px solid #d9dce5; border-radius: 8px; padding: 10px; margin-top: 10px; }
+.option-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.error { color: #aa1a1a; font-weight: 600; }
+.nav-buttons { display: flex; gap: 8px; margin-bottom: 8px; }
