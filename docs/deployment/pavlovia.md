@@ -6,7 +6,6 @@ This guide prepares artifacts and a static package that can be uploaded into a P
 
 ```bash
 npm run build
-npm run build -w @thought-tagger/studio
 ```
 
 ## 2) Compile your study
@@ -21,19 +20,19 @@ npm run compile -- \
 ## 3) Assemble a Pavlovia upload directory
 
 ```bash
-rm -rf deployment/pavlovia_package
-mkdir -p deployment/pavlovia_package/data
-cp -R apps/studio/dist/. deployment/pavlovia_package/
-cp examples/cot_step_tagging/out/* deployment/pavlovia_package/data/
+node packages/exporters/jspsych/src/cli.mjs \
+  --manifest examples/cot_step_tagging/out/manifest.json \
+  --out deployment/pavlovia_package
+cp examples/cot_step_tagging/out/* deployment/pavlovia_package/
 ```
 
 ## 4) Verify package integrity
 
 ```bash
 test -f deployment/pavlovia_package/index.html
-test -f deployment/pavlovia_package/data/manifest.json
-test -f deployment/pavlovia_package/data/units.jsonl
-test -f deployment/pavlovia_package/data/event_log_template.jsonl
+test -f deployment/pavlovia_package/manifest.json
+test -f deployment/pavlovia_package/units.jsonl
+test -f deployment/pavlovia_package/event_log_template.jsonl
 ```
 
 ## 5) (Optional) Local pre-upload smoke test
