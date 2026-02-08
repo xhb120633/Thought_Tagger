@@ -1,32 +1,48 @@
-# Production Readiness Gap Analysis
+# Production Readiness Status
 
-This repository is in a **release-candidate / production-hardening** state. Core compiler, exporters, docs, and checks are in place, and deterministic work distribution now includes both round-robin and load-balanced strategies.
+## Executive summary
 
-## Closed since previous review
+ThoughtTagger is **usable now for researcher workflows** where teams need deterministic compile/export plus clear deployment packaging.
 
-- Added deterministic conditional flows (`questions[].show_if`) validation in core spec checks.
-- Added explicit release governance docs (`docs/release_policy.md`, `CHANGELOG.md`).
-- Added security/compliance baseline and operations runbook docs.
-- Implemented deterministic workplan strategy options (`round_robin`, `load_balanced`) with validation and tests.
+- **Ready now:** compile pipeline, deterministic unitization, assignment workplans, exporter packages, example validations.
+- **Needs operational ownership by deployer:** authentication, secure hosting, storage, backups, and monitoring.
 
-## Remaining gaps before final production signoff
+This means the software is fit for real studies, but production responsibility is shared between toolkit + deployment team.
 
-1. **Runtime platform hardening for hosted Studio deployments**
-   - Authentication/authorization, server-side persistence, and audited access controls are still deployment responsibilities outside this repo baseline.
+## Current capability status
 
-2. **Operational telemetry at deployment layer**
-   - Error monitoring, alerting routes, SLO/SLA tracking, and rollback automation must be configured per environment.
+### 1) Data pipeline
+- Study spec + dataset validation are implemented.
+- Deterministic outputs (`manifest`, `units`, templates) are generated reliably.
+- Workplan expansion supports deterministic assignment strategies.
 
-3. **Dependency security cadence**
-   - Continue periodic `npm audit` triage and patch management per `docs/dependency_audit.md`.
+### 2) Deployment options
+- Local/demo deployment path is documented and straightforward.
+- Personal server (RA mode) path is documented via self-hosted static workspace.
+- Participant platform packaging is documented for Pavlovia and Prolific.
 
-## Production signoff checklist
+### 3) Researcher usability
+- Studio supports no-code-ish configuration and export workflows.
+- Documentation now emphasizes plain-language deployment choices and checklists.
 
-1. `npm run check:all` green in CI for target release commit.
-2. No unresolved high/critical dependency findings (or explicitly accepted and documented risk).
-3. Hosted deployment security controls (auth, TLS, persistence, backup, logging) verified in staging/prod.
-4. Stable release tag and changelog entry published.
+## Remaining risks before strict institutional signoff
+
+1. **Hosting security controls** (outside this repository)
+   - AuthN/AuthZ, TLS hardening, least-privilege access, data retention controls.
+
+2. **Operational resilience** (outside this repository)
+   - Monitoring/alerting, backup/restore drills, incident response ownership.
+
+3. **Dependency hygiene** (ongoing)
+   - Continue periodic audit/triage updates per `docs/dependency_audit.md`.
+
+## Practical signoff checklist for a research lab
+
+- [ ] `npm run check:all` passes on your release commit.
+- [ ] Pilot sessions run successfully in chosen deployment mode.
+- [ ] Data export path and storage location are confirmed.
+- [ ] Team roles are defined (who maintains server, backups, and incident response).
 
 ## Bottom line
 
-**Current status:** the repository codebase is production-capable for deterministic compile/export workflows, with remaining risk concentrated in deployment operations.
+ThoughtTagger is currently in a **researcher-usable RC state** with strong core functionality; the final production quality depends mainly on deployment operations and governance.

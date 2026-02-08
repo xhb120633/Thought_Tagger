@@ -1,14 +1,14 @@
-# Pavlovia Deployment (jsPsych-Compatible Package)
+# Deployment Guide: Pavlovia (Participant Studies)
 
-This guide prepares artifacts and a static package that can be uploaded into a Pavlovia-style/jsPsych hosting workflow.
+Use this when you want participants to run your study through a Pavlovia/jsPsych-style hosting flow.
 
-## 1) Build required packages
+## Step 1 — Build toolkit
 
 ```bash
 npm run build
 ```
 
-## 2) Compile your study
+## Step 2 — Compile study outputs
 
 ```bash
 npm run compile -- \
@@ -17,7 +17,7 @@ npm run compile -- \
   --out examples/cot_step_tagging/out
 ```
 
-## 3) Assemble a Pavlovia upload directory
+## Step 3 — Generate Pavlovia upload package
 
 ```bash
 node packages/exporters/jspsych/src/cli.mjs \
@@ -26,7 +26,7 @@ node packages/exporters/jspsych/src/cli.mjs \
 cp examples/cot_step_tagging/out/* deployment/pavlovia_package/
 ```
 
-## 4) Verify package integrity
+## Step 4 — Validate package files
 
 ```bash
 test -f deployment/pavlovia_package/index.html
@@ -35,17 +35,23 @@ test -f deployment/pavlovia_package/units.jsonl
 test -f deployment/pavlovia_package/event_log_template.jsonl
 ```
 
-## 5) (Optional) Local pre-upload smoke test
+## Step 5 — Optional local smoke test
 
 ```bash
 npx serve deployment/pavlovia_package -l 4174
 ```
 
-Open `http://localhost:4174` and confirm the study UI renders.
+Open: `http://localhost:4174`
 
-## 6) Upload steps
+## Step 6 — Upload to Pavlovia
 
-1. Create a new project on Pavlovia.
-2. Upload the contents of `deployment/pavlovia_package/`.
-3. Ensure `index.html` is the launch file.
-4. Start a pilot run and confirm events are produced against your expected logging pipeline.
+1. Create a project on Pavlovia.
+2. Upload everything inside `deployment/pavlovia_package/`.
+3. Set `index.html` as the entry file.
+4. Run a pilot with 1–2 users before full launch.
+
+## Researcher checklist
+
+- [ ] Pilot run completes without broken pages.
+- [ ] Expected study events are captured.
+- [ ] I documented where participant data is stored.
