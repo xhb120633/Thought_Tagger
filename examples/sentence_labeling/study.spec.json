@@ -1,0 +1,7 @@
+{
+  "study_id": "sentence_labeling_demo",
+  "rubric_version": "v1",
+  "task_type": "label",
+  "unitization_mode": "sentence_step",
+  "run_mode": "ra"
+}
