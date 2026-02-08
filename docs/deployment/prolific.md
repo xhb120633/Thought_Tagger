@@ -6,7 +6,6 @@ This guide packages a deployable workspace and validates fields commonly needed 
 
 ```bash
 npm run build
-npm run build -w @thought-tagger/studio
 ```
 
 ## 2) Compile a dataset for deployment
@@ -21,18 +20,19 @@ npm run compile -- \
 ## 3) Build deployment directory
 
 ```bash
-rm -rf deployment/prolific_workspace
-mkdir -p deployment/prolific_workspace/data
-cp -R apps/studio/dist/. deployment/prolific_workspace/
-cp examples/ab_compare_cot/out/* deployment/prolific_workspace/data/
+node packages/exporters/prolific/src/cli.mjs \
+  --manifest examples/ab_compare_cot/out/manifest.json \
+  --out deployment/prolific_workspace \
+  --completion-code ABC123
+cp examples/ab_compare_cot/out/* deployment/prolific_workspace/
 ```
 
 ## 4) Validate assignment + event templates (session tracking support)
 
 ```bash
-test -f deployment/prolific_workspace/data/assignment_manifest.jsonl
-test -f deployment/prolific_workspace/data/event_log_template.jsonl
-node -e "const fs=require('fs'); const p='deployment/prolific_workspace/data/assignment_manifest.jsonl'; const rows=fs.readFileSync(p,'utf8').trim().split('\n').filter(Boolean); if(!rows.length) throw new Error('assignment_manifest.jsonl has no rows'); const first=JSON.parse(rows[0]); if(!first.assignment_id||!first.annotator_id){throw new Error('assignment row missing IDs')} console.log('assignment row ok:', first.assignment_id, first.annotator_id)"
+test -f deployment/prolific_workspace/assignment_manifest.jsonl
+test -f deployment/prolific_workspace/event_log_template.jsonl
+node -e "const fs=require('fs'); const p='deployment/prolific_workspace/assignment_manifest.jsonl'; const rows=fs.readFileSync(p,'utf8').trim().split('\n').filter(Boolean); if(!rows.length) throw new Error('assignment_manifest.jsonl has no rows'); const first=JSON.parse(rows[0]); if(!first.assignment_id||!first.annotator_id){throw new Error('assignment row missing IDs')} console.log('assignment row ok:', first.assignment_id, first.annotator_id)"
 ```
 
 ## 5) Local validation run

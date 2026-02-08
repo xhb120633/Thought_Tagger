@@ -1,0 +1,12 @@
+{
+  "name": "@thought-tagger/exporter-webapp",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "thought-tagger-export-webapp": "src/cli.mjs"
+  },
+  "scripts": {
+    "build": "node -e \"console.log('webapp exporter build ok')\"",
+    "test": "node --test test/*.test.mjs"
+  }
+}

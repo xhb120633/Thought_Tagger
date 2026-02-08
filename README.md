@@ -44,6 +44,7 @@ npm run build
 npm test
 npm run build -w @thought-tagger/studio
 npm run validate:examples
+npm run smoke:exporters
 npm run check:all
 ```
 
