@@ -60,6 +60,9 @@ npm run check:all
 - [Pavlovia/jsPsych deployment](docs/deployment/pavlovia.md)
 - [Prolific integration deployment](docs/deployment/prolific.md)
 
+### Production readiness
+- [Production readiness gap analysis](docs/production_readiness.md)
+
 ### End-to-end workflow
 - [Raw dataset → deployed workspace → collected results walkthrough](docs/workflow_dataset_to_results.md)
 
