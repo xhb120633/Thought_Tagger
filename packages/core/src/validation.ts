@@ -1,4 +1,4 @@
-import { InputDocument, RubricQuestion, StudySpec, TaskType } from "./types.js";
+import { InputDocument, RubricQuestion, StudySpec, TargetSpan, TaskType } from "./types.js";
 
 const TASK_TYPES = new Set(["label", "annotate", "compare"]);
 const UNITIZATION_MODES = new Set(["document", "sentence_step", "target_span"]);
@@ -221,12 +221,52 @@ function getDiscreteAnswerValues(question: RubricQuestion): Set<string> {
   return new Set();
 }
 
-export function assertValidDocuments(documents: InputDocument[]): void {
+export function assertValidDocuments(documents: InputDocument[], unitizationMode?: StudySpec["unitization_mode"]): void {
   const seenIds = new Set<string>();
   for (const doc of documents) {
     if (!doc.doc_id.trim()) throw new Error("Every document needs doc_id");
     if (seenIds.has(doc.doc_id)) throw new Error(`Duplicate doc_id detected: ${doc.doc_id}`);
     if (!doc.text.trim()) throw new Error(`Document ${doc.doc_id} has empty text`);
+
+    if (unitizationMode === "target_span") {
+      assertValidTargetSpans(doc);
+    }
+
     seenIds.add(doc.doc_id);
+  }
+}
+
+function assertValidTargetSpans(doc: InputDocument): void {
+  if (!Array.isArray(doc.target_spans) || doc.target_spans.length === 0) {
+    throw new Error(`Document ${doc.doc_id} must include at least one target span when unitization_mode=target_span`);
+  }
+
+  const sorted = [...doc.target_spans].sort((a, b) => a.char_start - b.char_start || a.char_end - b.char_end);
+  let previous: TargetSpan | undefined;
+
+  for (const span of sorted) {
+    if (!Number.isInteger(span.char_start) || !Number.isInteger(span.char_end)) {
+      throw new Error(`Document ${doc.doc_id} has target span with non-integer offsets`);
+    }
+
+    if (span.char_start < 0 || span.char_end < 0) {
+      throw new Error(`Document ${doc.doc_id} has target span with negative offsets`);
+    }
+
+    if (span.char_start >= span.char_end) {
+      throw new Error(`Document ${doc.doc_id} has empty target span [${span.char_start}, ${span.char_end})`);
+    }
+
+    if (span.char_end > doc.text.length) {
+      throw new Error(`Document ${doc.doc_id} has out-of-range target span [${span.char_start}, ${span.char_end})`);
+    }
+
+    if (previous && span.char_start < previous.char_end) {
+      throw new Error(
+        `Document ${doc.doc_id} has overlapping target spans [${previous.char_start}, ${previous.char_end}) and [${span.char_start}, ${span.char_end})`
+      );
+    }
+
+    previous = span;
   }
 }

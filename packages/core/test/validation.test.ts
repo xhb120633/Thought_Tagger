@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertValidStudySpec } from "../src/validation.js";
+import { assertValidDocuments, assertValidStudySpec } from "../src/validation.js";
 
 test("study spec allows valid workplan configuration", () => {
   assert.doesNotThrow(() => {
@@ -279,4 +279,29 @@ test("study spec rejects empty compare pairing seed", () => {
       }
     });
   }, /compare_pairing.seed cannot be empty/);
+});
+
+
+test("document validation requires target_spans for target_span mode", () => {
+  assert.throws(() => {
+    assertValidDocuments([{ doc_id: "d_target_1", text: "Alpha" }], "target_span");
+  }, /must include at least one target span/);
+});
+
+test("document validation accepts valid target_spans for target_span mode", () => {
+  assert.doesNotThrow(() => {
+    assertValidDocuments(
+      [
+        {
+          doc_id: "d_target_2",
+          text: "Alpha Beta",
+          target_spans: [
+            { char_start: 0, char_end: 5 },
+            { char_start: 6, char_end: 10 }
+          ]
+        }
+      ],
+      "target_span"
+    );
+  });
 });

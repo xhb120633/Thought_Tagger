@@ -1,2 +1,2 @@
-{"doc_id":"span_1","text":"Highlight the target technical term in this sentence."}
-{"doc_id":"span_2","text":"Mark the proper noun in the paragraph for downstream checks."}
+{"doc_id":"span_1","text":"Highlight the target technical term in this sentence.","target_spans":[{"char_start":21,"char_end":30}]}
+{"doc_id":"span_2","text":"Mark the proper noun in the paragraph for downstream checks.","target_spans":[{"char_start":9,"char_end":20}]}

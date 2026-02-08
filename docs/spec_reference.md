@@ -33,6 +33,7 @@ This document converts the design logics into an implementable baseline spec for
 - `doc_id` (string; unique within a study upload)
 - `text` (string; full document content)
 - optional metadata fields prefixed by `meta.`
+- for `unitization_mode = target_span`: `target_spans` array, each span as `{ "char_start": number, "char_end": number }` (half-open offsets in the `text` string).
 
 ## 2.3 Compare mode input behavior
 Compare studies must define `compare_pairing` in the study spec:
@@ -114,8 +115,19 @@ Example:
   - `segmentation_version`
 
 ## 4.3 Target span mode
-- User highlights spans manually.
-- Span snapping is deterministic at character boundaries in V1.
+Input contract for each document:
+- `target_spans` is required and must contain at least one span.
+- Each span uses half-open offsets `[char_start, char_end)` against `text`.
+- Offsets must be integers, `0 <= char_start < char_end <= text.length`.
+- Spans must be non-overlapping; touching boundaries are allowed.
+
+Derivation behavior:
+- One derived unit is emitted per declared target span.
+- Units are sorted deterministically by `char_start`, then `char_end`.
+- Unit fields are computed as:
+  - `char_start` / `char_end`: copied from the span
+  - `unit_text`: `text.slice(char_start, char_end)`
+- Invalid spans fail compilation (empty, overlapping, or out-of-range).
 
 ---
 
