@@ -1,7 +1,6 @@
-import { mkdir, readdir, rm } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 const root = process.cwd();
@@ -11,40 +10,49 @@ const failures = [];
 
 for (const entry of entries) {
   if (!entry.isDirectory()) continue;
+
   const examplePath = join(examplesDir, entry.name);
   const specPath = join(examplePath, "study.spec.json");
-  const jsonlDatasetPath = join(examplePath, "dataset.jsonl");
+  const jsonDatasetPath = join(examplePath, "dataset.jsonl");
   const csvDatasetPath = join(examplePath, "dataset.csv");
-  const datasetBJsonlPath = join(examplePath, "dataset_b.jsonl");
-  const datasetBCsvPath = join(examplePath, "dataset_b.csv");
+  const jsonDatasetBPath = join(examplePath, "dataset_b.jsonl");
+  const csvDatasetBPath = join(examplePath, "dataset_b.csv");
   const outDir = join(examplePath, "out");
 
-  if (!existsSync(specPath) || (!existsSync(jsonlDatasetPath) && !existsSync(csvDatasetPath))) {
+  if (!existsSync(specPath) || (!existsSync(jsonDatasetPath) && !existsSync(csvDatasetPath))) {
     failures.push(`Example ${entry.name} is missing study.spec.json or dataset(.jsonl|.csv)`);
+    continue;
+  }
+
+  let spec;
+  try {
+    spec = JSON.parse(await readFile(specPath, "utf8"));
+  } catch (error) {
+    failures.push(`Example ${entry.name} has an unreadable study.spec.json (${error.message})`);
     continue;
   }
 
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
 
-  const datasetPath = existsSync(jsonlDatasetPath) ? jsonlDatasetPath : csvDatasetPath;
-  const spec = JSON.parse(await readFile(specPath, "utf8"));
-  const datasetBPath = existsSync(datasetBJsonlPath) ? datasetBJsonlPath : (existsSync(datasetBCsvPath) ? datasetBCsvPath : undefined);
+  const datasetPath = existsSync(jsonDatasetPath) ? jsonDatasetPath : csvDatasetPath;
+  const args = ["--spec", specPath, "--dataset", datasetPath, "--out", outDir];
 
-  const args = [
-    "--spec",
-    specPath,
-    "--dataset",
-    datasetPath,
-    "--out",
-    outDir
-  ];
+  const isTwoFileCompare = spec?.task_type === "compare" && spec?.compare_pairing?.mode === "two_file";
+  if (isTwoFileCompare) {
+    const datasetBPath = existsSync(jsonDatasetBPath)
+      ? jsonDatasetBPath
+      : existsSync(csvDatasetBPath)
+        ? csvDatasetBPath
+        : null;
 
-  if (spec?.task_type === "compare" && spec?.compare_pairing?.mode === "two_file") {
     if (!datasetBPath) {
-      failures.push(`Example ${entry.name} requires dataset_b(.jsonl|.csv) for compare_pairing.mode=two_file`);
+      failures.push(
+        `Example ${entry.name} is missing secondary dataset for two_file compare (expected dataset_b.jsonl or dataset_b.csv)`
+      );
       continue;
     }
+
     args.push("--dataset-b", datasetBPath);
   }
 
