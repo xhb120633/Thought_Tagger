@@ -62,6 +62,8 @@ For common research use, you do not need to hand-write JSON files.
 
 ## 5) Generate deployment-ready outputs
 
+If you exported a Studio bundle, use that output for deployment.
+
 If you are using example inputs from this repository:
 
 ```bash

@@ -9,7 +9,7 @@ Installing prepares all required ThoughtTagger components so the app can run on 
 ## Prerequisites
 
 - **Node.js 20+**
-- **npm 10+** (npm is included with Node.js in most setups)
+- **npm 10+** (usually installed together with Node.js)
 
 ## Step 1 — Open terminal and move to repository folder
 
