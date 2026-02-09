@@ -13,7 +13,7 @@ This guide is written for researchers who are comfortable with mouse + keyboard 
 
 If you have never used terminal commands before, do this once with a colleague/IT support. After initial setup, daily workflow can be mostly through the Studio UI.
 
-## What you need
+## What you will do in this quickstart
 
 - Node.js 20+ installed (includes npm)
 - ThoughtTagger repository downloaded to your computer
@@ -23,9 +23,9 @@ If you have never used terminal commands before, do this once with a colleague/I
 
 ## Step 1 — One-time install
 
-```bash
-npm install
-```
+- **Windows:** PowerShell
+- **macOS:** Terminal
+- **Linux:** Terminal
 
 ## Step 2 — Start the Studio UI
 
@@ -57,7 +57,10 @@ Inside Studio, you can build your annotation/evaluation setup without editing co
 ### Option A: Local testing/demo (recommended first)
 Use this to run pilot sessions on your own machine.
 
-Follow: `docs/deployment/self_host.md`
+```bash
+pwd
+ls
+```
 
 ### Option B: Personal server (RA mode)
 Use this for internal annotation by research assistants.
@@ -81,4 +84,5 @@ Follow:
 
 ## If something fails
 
-Go to: `docs/troubleshooting.md`
+- Check `docs/troubleshooting.md`
+- Recheck terminal location (`pwd`) and confirm you are inside `Thought_Tagger`.

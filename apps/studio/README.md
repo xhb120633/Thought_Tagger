@@ -4,6 +4,8 @@ Researcher-facing UI for create/adjust questionnaire + configure study + preview
 
 ## Run Studio locally
 
+From the repository root (`Thought_Tagger`) in Terminal, run:
+
 ```bash
 npm install
 npm run dev -w @thought-tagger/studio

@@ -23,7 +23,7 @@ Run commands in a **Terminal** opened at the repository root folder.
 npm install
 ```
 
-## Verify installation
+## Step 3 — Verify install
 
 ```bash
 npm run build

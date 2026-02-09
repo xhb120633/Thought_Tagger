@@ -50,10 +50,10 @@ mkdir -p deployment/e2e_workspace
 cp -R apps/studio/dist/. deployment/e2e_workspace/
 ```
 
-You now have:
+Now you have:
 
-- App shell in `deployment/e2e_workspace/`
-- Study outputs in `deployment/e2e_workspace/data/`
+- UI shell in `deployment/e2e_workspace/`
+- Study data outputs in `deployment/e2e_workspace/data/`
 
 ## 6) Run locally for pilot validation
 
