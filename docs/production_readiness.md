@@ -38,7 +38,7 @@ This means the software is fit for real studies, but production responsibility i
 
 ## Practical signoff checklist for a research lab
 
-- [ ] `npm run check:all` passes on your release commit.
+- [ ] `npm run preflight:release` passes on your release commit (runs `npm run check:all` and verifies required docs).
 - [ ] Pilot sessions run successfully in chosen deployment mode.
 - [ ] Data export path and storage location are confirmed.
 - [ ] Team roles are defined (who maintains server, backups, and incident response).

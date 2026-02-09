@@ -13,6 +13,7 @@
     "test": "npm run build && npm run test -w @thought-tagger/core && npm run test -w @thought-tagger/workplan && npm run test -w @thought-tagger/compiler && npm run test -w @thought-tagger/exporter-webapp && npm run test -w @thought-tagger/exporter-jspsych && npm run test -w @thought-tagger/exporter-prolific",
     "validate:examples": "node tools/validate-examples.mjs",
     "check:all": "npm test && npm run build -w @thought-tagger/studio && npm run validate:examples && npm run smoke:exporters",
-    "smoke:exporters": "node tools/smoke-exporters.mjs"
+    "smoke:exporters": "node tools/smoke-exporters.mjs",
+    "preflight:release": "node tools/preflight-release.mjs"
   }
 }
