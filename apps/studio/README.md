@@ -18,7 +18,7 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
 3. Choose:
    - **Task Type**
    - **Unitization Mode**
-   - **Run Mode** (`pilot`, `ra`, etc.)
+   - **Run Mode** (`participant` or `ra`)
 4. If using multiple annotators, configure **Workplan**:
    - Add annotator IDs (comma-separated)
    - Set replication factor
@@ -36,7 +36,7 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
 - `event_log_template.jsonl`
 - `assignment_manifest.jsonl` (if workplan is enabled)
 - `studio_bundle.json`
-- `compare_context.jsonl` (when `compare_context` is present in the Studio spec)
+- `compare_context.jsonl` (only when `compare_context` is present in the input spec)
 
 ## After export: choose deployment path
 
@@ -50,3 +50,9 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
 - Rubric content is persisted in browser local storage.
 - `studio_bundle.json` includes `spec`, `rubric_config`, `docs`, `units`, and `generated_files` for round-trip reproducibility.
 - In `ra` mode, Studio autosaves and can resume draft state.
+
+## Current limitations
+
+- **Compare pairing config in UI:** Not currently exposed. The Studio form does not provide controls for `compare_context` or compare pairing setup.
+- **Advanced workplan strategies in UI:** Not exposed. Studio only supports `assignment_strategy: "round_robin"` and does not provide UI for alternative strategies.
+- **Compare context file generation:** `compare_context.jsonl` is generated only if `spec.compare_context` is populated. The current Studio UI does not populate this field, so normal UI-based exports do not generate this file.
