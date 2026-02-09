@@ -36,6 +36,7 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
 - `event_log_template.jsonl`
 - `assignment_manifest.jsonl` (if workplan is enabled)
 - `studio_bundle.json`
+- `compare_context.jsonl` (when `compare_context` is present in the Studio spec)
 
 ## After export: choose deployment path
 
@@ -47,4 +48,5 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
 
 - CSV requires headers: `doc_id,text`
 - Rubric content is persisted in browser local storage.
+- `studio_bundle.json` includes `spec`, `rubric_config`, `docs`, `units`, and `generated_files` for round-trip reproducibility.
 - In `ra` mode, Studio autosaves and can resume draft state.

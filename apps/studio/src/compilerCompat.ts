@@ -35,6 +35,7 @@ export type StudySpec = {
   unitization_mode: UnitizationMode;
   run_mode: RunMode;
   questions?: RubricQuestion[];
+  compare_context?: Array<Record<string, unknown>>;
   workplan?: {
     annotator_ids: string[];
     replication_factor?: number;
@@ -219,6 +220,7 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
     "",
     "",
     "",
+    "",
     ""
   ]);
   out["annotation_template.csv"] = toCsv(
@@ -233,11 +235,16 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
       "confidence",
       "rationale",
       "condition_id",
+      "compare_context",
       "created_at",
       "updated_at"
     ],
     annotationRows
   );
+
+  if (spec.compare_context?.length) {
+    out["compare_context.jsonl"] = toJsonl(spec.compare_context);
+  }
 
   out["event_log_template.jsonl"] = toJsonl(
     units.map((unit) => ({
@@ -255,13 +262,18 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
     out["assignment_manifest.jsonl"] = toJsonl(buildAssignmentManifest(units, spec.workplan));
   }
 
-  out["studio_bundle.json"] = JSON.stringify({
-    spec,
-    rubric_config: { questions: spec.questions ?? [] },
-    docs,
-    units,
-    generated_files: Object.keys(out)
-  }, null, 2);
+  const generatedFiles = [...Object.keys(out), "studio_bundle.json"];
+  out["studio_bundle.json"] = JSON.stringify(
+    {
+      spec,
+      rubric_config: { questions: spec.questions ?? [] },
+      docs,
+      units,
+      generated_files: generatedFiles
+    },
+    null,
+    2
+  );
   return out;
 }
 
