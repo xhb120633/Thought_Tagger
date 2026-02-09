@@ -70,6 +70,8 @@ Studio helps you:
 - Configure spec fields visually
 - Export compiler-compatible bundle files
 
+Current Studio UI intentionally exposes only a subset of full compiler configuration. Advanced compare pairing/context and advanced workplan strategy inputs are still CLI-first even though Studio's generated output schema aligns with compiler artifacts.
+
 ## If something fails
 
 Go to: `docs/troubleshooting.md`

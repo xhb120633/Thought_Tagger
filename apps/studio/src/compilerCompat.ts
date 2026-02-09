@@ -38,7 +38,16 @@ export type StudySpec = {
   workplan?: {
     annotator_ids: string[];
     replication_factor?: number;
-    assignment_strategy?: "round_robin";
+    assignment_strategy?: "round_robin" | "load_balanced" | "weighted" | "stratified_round_robin";
+    assignment_seed?: string;
+    assignment_weights?: Record<string, number>;
+    stratify_by_meta_key?: string;
+  };
+  compare_context?: {
+    mode: "inline_meta" | "sidecar";
+    context_meta_key?: string;
+    sidecar_pair_id_field?: string;
+    sidecar_context_field?: string;
   };
 };
 
@@ -93,6 +102,7 @@ function validateQuestions(taskType: TaskType, questions: RubricQuestion[]): voi
 export type InputDoc = { doc_id: string; text: string };
 export type Unit = {
   doc_id: string;
+  pair_id?: string;
   unit_id: string;
   unit_type: UnitizationMode;
   index: number;
@@ -100,6 +110,7 @@ export type Unit = {
   char_end: number;
   unit_text: string;
   segmentation_version: string;
+  meta?: Record<string, string | number | boolean | null>;
 };
 
 export function parseJsonl(text: string): InputDoc[] {
@@ -219,6 +230,7 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
     "",
     "",
     "",
+    "",
     ""
   ]);
   out["annotation_template.csv"] = toCsv(
@@ -233,6 +245,7 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
       "confidence",
       "rationale",
       "condition_id",
+      "compare_context",
       "created_at",
       "updated_at"
     ],
@@ -255,6 +268,11 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
     out["assignment_manifest.jsonl"] = toJsonl(buildAssignmentManifest(units, spec.workplan));
   }
 
+  const compareContextRows = buildCompareContextRows(spec, units);
+  if (compareContextRows.length > 0) {
+    out["compare_context.jsonl"] = toJsonl(compareContextRows);
+  }
+
   out["studio_bundle.json"] = JSON.stringify({
     spec,
     rubric_config: { questions: spec.questions ?? [] },
@@ -268,7 +286,98 @@ export function buildArtifacts(spec: StudySpec, docs: InputDoc[], units: Unit[])
 function buildAssignmentManifest(units: Unit[], workplan: NonNullable<StudySpec["workplan"]>) {
   const annotators = workplan.annotator_ids;
   const replicationFactor = workplan.replication_factor ?? 1;
+  const strategy = workplan.assignment_strategy ?? "round_robin";
+  const seed = workplan.assignment_seed ?? "thought-tagger-v1";
+
+  if (strategy === "load_balanced") {
+    return buildLoadBalancedAssignmentManifest(units, annotators, replicationFactor, seed);
+  }
+
+  if (strategy === "weighted") {
+    return buildWeightedAssignmentManifest(units, annotators, replicationFactor, seed, workplan.assignment_weights ?? {});
+  }
+
+  if (strategy === "stratified_round_robin") {
+    return buildStratifiedRoundRobinAssignmentManifest(units, annotators, replicationFactor, workplan.stratify_by_meta_key ?? "");
+  }
+
   return units.flatMap((unit, unitIndex) => {
+    const selectedAnnotators = pickAnnotatorsRoundRobin(annotators, unitIndex, replicationFactor);
+    return selectedAnnotators.map((annotatorId) => ({
+      assignment_id: `${unit.unit_id}:${annotatorId}`,
+      annotator_id: annotatorId,
+      doc_id: unit.doc_id,
+      unit_id: unit.unit_id
+    }));
+  });
+}
+
+function buildLoadBalancedAssignmentManifest(units: Unit[], annotators: string[], replicationFactor: number, seed: string) {
+  const assignmentCountByAnnotator = new Map(annotators.map((annotatorId) => [annotatorId, 0]));
+
+  return units.flatMap((unit) => {
+    const selectedAnnotators = pickAnnotatorsLoadBalanced(unit, annotators, replicationFactor, seed, assignmentCountByAnnotator);
+
+    for (const annotatorId of selectedAnnotators) {
+      assignmentCountByAnnotator.set(annotatorId, (assignmentCountByAnnotator.get(annotatorId) ?? 0) + 1);
+    }
+
+    return selectedAnnotators.map((annotatorId) => ({
+      assignment_id: `${unit.unit_id}:${annotatorId}`,
+      annotator_id: annotatorId,
+      doc_id: unit.doc_id,
+      unit_id: unit.unit_id
+    }));
+  });
+}
+
+function buildWeightedAssignmentManifest(
+  units: Unit[],
+  annotators: string[],
+  replicationFactor: number,
+  seed: string,
+  weights: Record<string, number>
+) {
+  const defaultWeight = 1;
+  const assignmentCountByAnnotator = new Map(annotators.map((annotatorId) => [annotatorId, 0]));
+
+  return units.flatMap((unit) => {
+    const selectedAnnotators = pickAnnotatorsWeighted(
+      unit,
+      annotators,
+      replicationFactor,
+      seed,
+      weights,
+      defaultWeight,
+      assignmentCountByAnnotator
+    );
+
+    for (const annotatorId of selectedAnnotators) {
+      assignmentCountByAnnotator.set(annotatorId, (assignmentCountByAnnotator.get(annotatorId) ?? 0) + 1);
+    }
+
+    return selectedAnnotators.map((annotatorId) => ({
+      assignment_id: `${unit.unit_id}:${annotatorId}`,
+      annotator_id: annotatorId,
+      doc_id: unit.doc_id,
+      unit_id: unit.unit_id
+    }));
+  });
+}
+
+function buildStratifiedRoundRobinAssignmentManifest(
+  units: Unit[],
+  annotators: string[],
+  replicationFactor: number,
+  stratifyByMetaKey: string
+) {
+  const counters = new Map<string, number>();
+
+  return units.flatMap((unit) => {
+    const stratum = deriveStratumKey(unit, stratifyByMetaKey);
+    const unitIndex = counters.get(stratum) ?? 0;
+    counters.set(stratum, unitIndex + 1);
+
     const selectedAnnotators = pickAnnotatorsRoundRobin(annotators, unitIndex, replicationFactor);
     return selectedAnnotators.map((annotatorId) => ({
       assignment_id: `${unit.unit_id}:${annotatorId}`,
@@ -286,6 +395,100 @@ function pickAnnotatorsRoundRobin(annotators: string[], unitIndex: number, repli
     out.push(annotators[(start + i) % annotators.length]);
   }
   return out;
+}
+
+function pickAnnotatorsLoadBalanced(
+  unit: Unit,
+  annotators: string[],
+  replicationFactor: number,
+  seed: string,
+  assignmentCountByAnnotator: Map<string, number>
+): string[] {
+  const picked = new Set<string>();
+
+  while (picked.size < replicationFactor) {
+    const candidates = annotators.filter((annotatorId) => !picked.has(annotatorId));
+    const minLoad = Math.min(...candidates.map((annotatorId) => assignmentCountByAnnotator.get(annotatorId) ?? 0));
+    const leastLoaded = candidates.filter((annotatorId) => (assignmentCountByAnnotator.get(annotatorId) ?? 0) === minLoad);
+
+    leastLoaded.sort((a, b) => {
+      const hashA = stableHash(`${seed}:${unit.unit_id}:${a}`);
+      const hashB = stableHash(`${seed}:${unit.unit_id}:${b}`);
+      return hashA.localeCompare(hashB);
+    });
+
+    picked.add(leastLoaded[0]);
+  }
+
+  return [...picked];
+}
+
+function pickAnnotatorsWeighted(
+  unit: Unit,
+  annotators: string[],
+  replicationFactor: number,
+  seed: string,
+  weights: Record<string, number>,
+  defaultWeight: number,
+  assignmentCountByAnnotator: Map<string, number>
+): string[] {
+  const picked = new Set<string>();
+
+  while (picked.size < replicationFactor) {
+    const candidates = annotators.filter((annotatorId) => !picked.has(annotatorId));
+    const minRatio = Math.min(
+      ...candidates.map((annotatorId) => {
+        const load = assignmentCountByAnnotator.get(annotatorId) ?? 0;
+        const weight = weights[annotatorId] ?? defaultWeight;
+        return load / weight;
+      })
+    );
+
+    const best = candidates.filter((annotatorId) => {
+      const load = assignmentCountByAnnotator.get(annotatorId) ?? 0;
+      const weight = weights[annotatorId] ?? defaultWeight;
+      return load / weight === minRatio;
+    });
+
+    best.sort((a, b) => {
+      const hashA = stableHash(`${seed}:${unit.unit_id}:${a}`);
+      const hashB = stableHash(`${seed}:${unit.unit_id}:${b}`);
+      return hashA.localeCompare(hashB);
+    });
+
+    picked.add(best[0]);
+  }
+
+  return [...picked];
+}
+
+function deriveStratumKey(unit: Unit, stratifyByMetaKey: string): string {
+  if (!stratifyByMetaKey) return "__all__";
+  const raw = unit.meta?.[stratifyByMetaKey];
+  if (raw === undefined || raw === null || String(raw).length === 0) {
+    return "__missing__";
+  }
+  return String(raw);
+}
+
+function buildCompareContextRows(spec: StudySpec, units: Unit[]): Array<{ unit_id: string; pair_id: string | null; context: string | number | boolean | null }> {
+  if (spec.task_type !== "compare" || !spec.compare_context) return [];
+
+  if (spec.compare_context.mode === "inline_meta") {
+    const key = spec.compare_context.context_meta_key ?? "";
+    return units.map((unit) => ({
+      unit_id: unit.unit_id,
+      pair_id: unit.pair_id ?? null,
+      context: unit.meta?.[key] ?? null
+    }));
+  }
+
+  const contextField = spec.compare_context.sidecar_context_field ?? "context";
+  return units.map((unit) => ({
+    unit_id: unit.unit_id,
+    pair_id: unit.pair_id ?? null,
+    context: unit.meta?.[contextField] ?? null
+  }));
 }
 
 function createManifest(spec: StudySpec, docs: InputDoc[], units: Unit[]) {

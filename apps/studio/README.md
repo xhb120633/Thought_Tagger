@@ -35,7 +35,18 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
 - `annotation_template.csv`
 - `event_log_template.jsonl`
 - `assignment_manifest.jsonl` (if workplan is enabled)
+- `compare_context.jsonl` (only when `task_type=compare` and `compare_context` is configured)
 - `studio_bundle.json`
+
+## Studio compatibility limits
+
+Studio export schema matches compiler column/file names, including `annotation_template.csv` `compare_context` and optional `compare_context.jsonl` output. However, the current UI intentionally does **not** expose full compiler config parity yet:
+
+- no visual editor for `compare_pairing`
+- no UI fields for `compare_context` config
+- no UI controls for advanced workplan knobs (`assignment_seed`, `assignment_weights`, `stratify_by_meta_key`)
+
+If you need full compiler features, compile from CLI with `packages/compiler` inputs.
 
 ## After export: choose deployment path
 
