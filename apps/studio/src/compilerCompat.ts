@@ -99,7 +99,12 @@ function validateQuestions(taskType: TaskType, questions: RubricQuestion[]): voi
   }
 }
 
-export type InputDoc = { doc_id: string; text: string };
+export type InputDoc = {
+  doc_id: string;
+  text: string;
+  pair_id?: string;
+  meta?: Record<string, string | number | boolean | null>;
+};
 export type Unit = {
   doc_id: string;
   pair_id?: string;
@@ -126,12 +131,27 @@ export function parseCsv(text: string): InputDoc[] {
   const headers = parseCsvLine(lines[0]).map((h) => h.trim());
   const idIdx = headers.indexOf("doc_id");
   const textIdx = headers.indexOf("text");
+  const pairIdIdx = headers.indexOf("pair_id");
+  const metaColumns = headers
+    .map((name, idx) => ({ name, idx }))
+    .filter(({ name }) => name.startsWith("meta."));
+
   if (idIdx < 0 || textIdx < 0) {
     throw new Error("CSV must include doc_id and text columns");
   }
+
   return lines.slice(1).map((line) => {
     const cells = parseCsvLine(line);
-    return { doc_id: (cells[idIdx] ?? "").trim(), text: (cells[textIdx] ?? "").trim() };
+    const metaEntries = metaColumns
+      .map(({ name, idx }) => [name.slice("meta.".length), (cells[idx] ?? "").trim()] as const)
+      .filter(([, value]) => value.length > 0);
+
+    return {
+      doc_id: (cells[idIdx] ?? "").trim(),
+      text: (cells[textIdx] ?? "").trim(),
+      ...(pairIdIdx >= 0 && (cells[pairIdIdx] ?? "").trim().length > 0 ? { pair_id: (cells[pairIdIdx] ?? "").trim() } : {}),
+      ...(metaEntries.length > 0 ? { meta: Object.fromEntries(metaEntries) } : {})
+    };
   });
 }
 
@@ -165,13 +185,15 @@ export function deriveUnits(docs: InputDoc[], mode: UnitizationMode): Unit[] {
   if (mode !== "sentence_step") {
     return docs.map((doc) => ({
       doc_id: doc.doc_id,
+      pair_id: doc.pair_id,
       unit_id: `${doc.doc_id}:u0`,
       unit_type: mode,
       index: 0,
       char_start: 0,
       char_end: doc.text.length,
       unit_text: doc.text,
-      segmentation_version: "rulebased_v1"
+      segmentation_version: "rulebased_v1",
+      meta: doc.meta
     }));
   }
 
@@ -188,13 +210,15 @@ export function deriveUnits(docs: InputDoc[], mode: UnitizationMode): Unit[] {
       const end = start + trimmed.length;
       units.push({
         doc_id: doc.doc_id,
+        pair_id: doc.pair_id,
         unit_id: `${doc.doc_id}:u${idx}`,
         unit_type: mode,
         index: idx,
         char_start: start,
         char_end: end,
         unit_text: trimmed,
-        segmentation_version: "rulebased_v1"
+        segmentation_version: "rulebased_v1",
+        meta: doc.meta
       });
       idx += 1;
     }
@@ -202,13 +226,15 @@ export function deriveUnits(docs: InputDoc[], mode: UnitizationMode): Unit[] {
       ? units
       : [{
           doc_id: doc.doc_id,
+          pair_id: doc.pair_id,
           unit_id: `${doc.doc_id}:u0`,
           unit_type: mode,
           index: 0,
           char_start: 0,
           char_end: doc.text.length,
           unit_text: doc.text,
-          segmentation_version: "rulebased_v1"
+          segmentation_version: "rulebased_v1",
+          meta: doc.meta
         }];
   });
 }

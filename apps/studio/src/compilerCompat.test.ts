@@ -1,4 +1,4 @@
-import { buildArtifacts, StudySpec, Unit } from "./compilerCompat";
+import { buildArtifacts, deriveUnits, parseCsv, StudySpec, Unit } from "./compilerCompat";
 
 describe("compilerCompat artifact generation", () => {
   test("annotation template header includes compare_context column in compiler order", () => {
@@ -29,7 +29,7 @@ describe("compilerCompat artifact generation", () => {
     expect(header).toBe(
       "study_id,rubric_version,annotator_id,doc_id,unit_id,task_type,response_payload,confidence,rationale,condition_id,compare_context,created_at,updated_at"
     );
-    expect(firstRow).toBe("study_1,v1,,d1,d1:u0,annotate,,,,,,,",);
+    expect(firstRow).toBe("study_1,v1,,d1,d1:u0,annotate,,,,,,,");
   });
 
   test("compare_context.jsonl is emitted when compare context mode is configured", () => {
@@ -45,26 +45,43 @@ describe("compilerCompat artifact generation", () => {
       }
     };
 
+    const docs = parseCsv([
+      "doc_id,text,pair_id,meta.shared_context",
+      "pair_1:A,left,pair_1,prompt"
+    ].join("\n"));
+    const units = deriveUnits(docs, "document");
+
+    const artifacts = buildArtifacts(spec, docs, units);
+
+    expect(artifacts["compare_context.jsonl"]).toBe(
+      '{"unit_id":"pair_1:A:u0","pair_id":"pair_1","context":"prompt"}'
+    );
+  });
+
+  test("does not emit compare_context.jsonl when compare context is not configured", () => {
+    const spec: StudySpec = {
+      study_id: "compare_study",
+      rubric_version: "v2",
+      task_type: "compare",
+      unitization_mode: "document",
+      run_mode: "participant"
+    };
+
     const units: Unit[] = [
       {
         doc_id: "pair_1:A",
-        pair_id: "pair_1",
         unit_id: "pair_1:A:u0",
         unit_type: "document",
         index: 0,
         char_start: 0,
         char_end: 4,
         unit_text: "left",
-        segmentation_version: "rulebased_v1",
-        meta: { shared_context: "prompt" }
+        segmentation_version: "rulebased_v1"
       }
     ];
 
     const artifacts = buildArtifacts(spec, [{ doc_id: "pair_1:A", text: "left" }], units);
-
-    expect(artifacts["compare_context.jsonl"]).toBe(
-      '{"unit_id":"pair_1:A:u0","pair_id":"pair_1","context":"prompt"}'
-    );
+    expect(artifacts["compare_context.jsonl"]).toBeUndefined();
   });
 
   test("load_balanced workplan strategy is supported", () => {
@@ -116,6 +133,6 @@ describe("compilerCompat artifact generation", () => {
 
     const assignments = artifacts["assignment_manifest.jsonl"].split("\n").map((row) => JSON.parse(row));
     expect(assignments).toHaveLength(2);
-    expect(new Set(assignments.map((row) => row.annotator_id))).toEqual(new Set(["a1", "a2"]));
+    expect(new Set(assignments.map((row: { annotator_id: string }) => row.annotator_id))).toEqual(new Set(["a1", "a2"]));
   });
 });
