@@ -1,6 +1,6 @@
 # ThoughtTagger — Research Annotation Toolkit
 
-ThoughtTagger helps psychology researchers turn a study design + text dataset into annotation-ready study files.
+ThoughtTagger helps psychology researchers design labeling/evaluation studies (including questionnaire-style rubric prompts) and turn them into annotation-ready study files.
 
 ## Current project status (March 2026)
 
@@ -38,8 +38,9 @@ npm run compile -- \
 ## Documentation index
 
 ### Start here (non-technical)
-- [Researcher quickstart](docs/quickstart.md)
-- [Installation guide](docs/installation.md)
+- [Terminal basics (open terminal + use `cd` step-by-step)](docs/terminal_basics.md)
+- [Researcher quickstart (explains npm/Terminal + UI-first workflow)](docs/quickstart.md)
+- [Installation guide (beginner-friendly)](docs/installation.md)
 - [Study workflow: dataset → deployment → results](docs/workflow_dataset_to_results.md)
 
 ### Study design and specs

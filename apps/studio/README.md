@@ -1,8 +1,10 @@
 # ThoughtTagger Studio
 
-Researcher-facing UI for upload → configure → preview → export.
+Researcher-facing UI for create/adjust questionnaire + configure study + preview + export.
 
 ## Run Studio locally
+
+From the repository root (`Thought_Tagger`) in Terminal, run:
 
 ```bash
 npm install
@@ -24,7 +26,7 @@ Open the URL printed in terminal (usually `http://localhost:5173`).
    - Set replication factor
 5. In **Dataset Input**, choose `JSONL` or `CSV`.
 6. Upload your dataset file or paste data into the text area.
-7. In **Rubric Editor**, edit your rubric JSON.
+7. In **Rubric Editor**, create/edit your questionnaire prompts and scoring/label options.
 8. Check **Preview** panel for expected document/unit counts.
 9. Click **Export Compiler Bundle**.
 

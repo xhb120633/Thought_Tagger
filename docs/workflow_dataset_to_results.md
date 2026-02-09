@@ -1,8 +1,40 @@
-# Walkthrough: Raw Dataset → Deployed Workspace → Collected Results
+# Walkthrough: Dataset/Questions → Deployed Study → Collected Results
 
-This walkthrough requires **no code edits**. It uses existing scripts and examples in the repository.
+This walkthrough is for non-programmer researchers and is UI-first.
 
-## 1) Install and build
+## 0) Before starting
+
+- Read `docs/terminal_basics.md` if you are unfamiliar with Terminal.
+- Make sure all commands are run inside the `Thought_Tagger` folder.
+
+## 1) Open terminal and go to the repository folder
+
+### Windows
+
+```powershell
+cd C:\Users\YourName\Downloads\Thought_Tagger
+```
+
+### macOS
+
+```bash
+cd /Users/yourname/Downloads/Thought_Tagger
+```
+
+### Linux
+
+```bash
+cd /home/yourname/Downloads/Thought_Tagger
+```
+
+Check:
+
+```bash
+pwd
+ls
+```
+
+## 2) Prepare the app once
 
 ```bash
 npm install
@@ -10,14 +42,27 @@ npm run build
 npm run build -w @thought-tagger/studio
 ```
 
-## 2) Start from a raw dataset + spec
+## 3) Open Studio UI
 
-Use the included example as a stand-in for your raw dataset:
+```bash
+npm run dev -w @thought-tagger/studio
+```
 
-- Spec: `examples/span_target_word/study.spec.json`
-- Dataset: `examples/span_target_word/dataset.jsonl`
+Open the URL shown in terminal (usually `http://localhost:5173`).
 
-Compile:
+## 4) Design the study in Studio (mouse + keyboard)
+
+1. Fill in study basics under **StudySpec Configuration**.
+2. Create your labeling/evaluation questionnaire in **Rubric Editor**.
+3. Provide data under **Dataset Input** (file upload or text paste).
+4. Check **Preview**.
+5. Click **Export Compiler Bundle**.
+
+For common research use, you do not need to hand-write JSON files.
+
+## 5) Generate deployment-ready outputs
+
+If you are using example inputs from this repository:
 
 ```bash
 npm run compile -- \
@@ -26,29 +71,27 @@ npm run compile -- \
   --out deployment/e2e_workspace/data
 ```
 
-## 3) Create a deployable workspace
+## 6) Create deployable workspace
 
 ```bash
 mkdir -p deployment/e2e_workspace
 cp -R apps/studio/dist/. deployment/e2e_workspace/
 ```
 
-You now have:
+Now you have:
 
-- App shell in `deployment/e2e_workspace/`
-- Study outputs in `deployment/e2e_workspace/data/`
+- UI shell in `deployment/e2e_workspace/`
+- Study data outputs in `deployment/e2e_workspace/data/`
 
-## 4) Run the deployed workspace locally
+## 7) Run locally for pilot validation
 
 ```bash
 npx serve deployment/e2e_workspace -l 4176
 ```
 
-Open `http://localhost:4176` and run through a participant session.
+Open `http://localhost:4176` and run one full participant/annotator session.
 
-## 5) Collect and verify resulting artifacts
-
-The compiler-generated artifacts define the schemas expected for collection:
+## 8) Verify key output files exist
 
 ```bash
 test -f deployment/e2e_workspace/data/manifest.json
@@ -57,19 +100,10 @@ test -f deployment/e2e_workspace/data/annotation_template.csv
 test -f deployment/e2e_workspace/data/event_log_template.jsonl
 ```
 
-Quick schema checks:
+## 9) Move to your deployment target
 
-```bash
-node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('deployment/e2e_workspace/data/manifest.json','utf8')); ['study_id','task_type','unitization_mode','rubric_version'].forEach(k=>{if(!(k in m)) throw new Error('manifest missing '+k)}); console.log('manifest keys ok')"
-node -e "const fs=require('fs'); const row=JSON.parse(fs.readFileSync('deployment/e2e_workspace/data/units.jsonl','utf8').trim().split('\n')[0]); ['unit_id','doc_id','unit_text'].forEach(k=>{if(!(k in row)) throw new Error('units row missing '+k)}); console.log('units schema sample ok')"
-```
+- Local / RA server: `docs/deployment/self_host.md`
+- Pavlovia: `docs/deployment/pavlovia.md`
+- Prolific: `docs/deployment/prolific.md`
 
-## 6) Save/reload + session resume drill
-
-1. During a run, copy the active browser URL (including query params).
-2. Reload the page.
-3. Reopen the copied URL in a new tab/window.
-4. Confirm your session identifiers are still present and map to the same assignment/session context.
-5. Continue annotation and verify the resulting output still conforms to your expected templates.
-
-Use this when validating production deployments or reverse-proxy changes.
+Use successful local pilot completion as your go/no-go check before external participants.
