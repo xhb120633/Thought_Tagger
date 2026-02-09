@@ -1,69 +1,33 @@
 # Quickstart for Psychology Researchers (No Programming Background)
 
-This guide is intentionally step-by-step for researchers who use computers comfortably but do not program.
+This guide is written for researchers who are comfortable with mouse + keyboard workflows and may be new to software tools.
+
+## Before you start: what is npm, and where do I type commands?
+
+- **npm** is the package manager that installs and runs ThoughtTagger.
+- You type npm commands in a **Terminal** app:
+  - **Windows:** PowerShell or Command Prompt
+  - **macOS:** Terminal
+  - **Linux:** Terminal
+- Open the terminal in the ThoughtTagger folder (repository root), then run the commands in this guide.
+
+If you have never used terminal commands before, do this once with a colleague/IT support. After initial setup, daily workflow can be mostly through the Studio UI.
 
 ## What you will do in this quickstart
 
-1. Open Terminal.
-2. Move into the ThoughtTagger folder.
-3. Install required files once.
-4. Start the Studio UI.
-5. Create your study via mouse + keyboard.
+- Node.js 20+ installed (includes npm)
+- ThoughtTagger repository downloaded to your computer
+- Optional: your own dataset file (`.jsonl` or `.csv`)
 
-## Before commands: where to type them
+> No dataset file yet? You can still start by typing/pasting text directly in Studio.
 
-You will type commands in a **Terminal** app:
+## Step 1 — One-time install
 
 - **Windows:** PowerShell
 - **macOS:** Terminal
 - **Linux:** Terminal
 
-If you are new to Terminal, start here first:
-
-- `docs/terminal_basics.md`
-
-> Important: commands like `npm install` must run **inside the ThoughtTagger repository folder**.
-
-## Step 1 — Open terminal and go to project folder
-
-Use `cd` to move into the repository folder.
-
-### Windows example
-
-```powershell
-cd C:\Users\YourName\Downloads\Thought_Tagger
-```
-
-### macOS example
-
-```bash
-cd /Users/yourname/Downloads/Thought_Tagger
-```
-
-### Linux example
-
-```bash
-cd /home/yourname/Downloads/Thought_Tagger
-```
-
-Confirm location:
-
-```bash
-pwd
-ls
-```
-
-You should see `README.md`, `docs`, `apps`, `packages`.
-
-## Step 2 — Install once
-
-```bash
-npm install
-```
-
-What this does: downloads the components ThoughtTagger needs.
-
-## Step 3 — Start Studio UI
+## Step 2 — Start the Studio UI
 
 ```bash
 npm run dev -w @thought-tagger/studio
@@ -71,46 +35,52 @@ npm run dev -w @thought-tagger/studio
 
 Open the URL printed in terminal (usually `http://localhost:5173`).
 
-## Step 4 — Create your study in Studio (mouse + keyboard workflow)
+## Step 3 — Create your study in Studio (mouse + keyboard workflow)
 
-Inside Studio:
+Inside Studio, you can build your annotation/evaluation setup without editing code:
 
-1. In **StudySpec Configuration**:
-   - enter **Study ID** (your project name),
-   - choose **Task Type**, **Unitization Mode**, **Run Mode**.
-2. In **Rubric Editor**:
-   - create your questionnaire/label prompts,
-   - define options or scoring choices.
-3. In **Dataset Input**:
-   - upload a `.csv`/`.jsonl` file, or
-   - paste text directly for first drafts.
-4. In **Preview**:
-   - confirm expected counts look right.
-5. Click **Export Compiler Bundle**.
+1. **StudySpec Configuration**
+   - Type study name (**Study ID**)
+   - Choose **Task Type**, **Unitization Mode**, and **Run Mode**
+2. **Questionnaire / rubric setup**
+   - Use **Rubric Editor** to define the evaluation questions/options
+   - You can type, revise, and iterate directly from keyboard
+3. **Dataset Input**
+   - Either upload a file **or paste text data directly**
+4. **Preview**
+   - Verify expected document/unit counts
+5. **Export Compiler Bundle**
+   - Generate study artifacts used for deployment
 
-## Step 5 — Choose where to run your study
+## Step 4 — Choose a deployment path (simplest first)
 
-### Option A (easiest): Local testing/demo
-- Use for pilot sessions on your own machine.
-- Guide: `docs/deployment/self_host.md`
+### Option A: Local testing/demo (recommended first)
+Use this to run pilot sessions on your own machine.
+
+```bash
+pwd
+ls
+```
 
 ### Option B: Personal server (RA mode)
-- Use for internal research assistant workflows.
-- Guide: `docs/deployment/self_host.md`
+Use this for internal annotation by research assistants.
 
-### Option C: Participant platforms
-- Use for broader recruitment.
-- Guides:
-  - `docs/deployment/pavlovia.md`
-  - `docs/deployment/prolific.md`
+Follow: `docs/deployment/self_host.md`
 
-## Files you should see after export
+### Option C: Participant platforms (Pavlovia/Prolific)
+Use this for broader participant recruitment.
+
+Follow:
+- `docs/deployment/pavlovia.md`
+- `docs/deployment/prolific.md`
+
+## What files are generated after export
 
 - `manifest.json`
 - `units.jsonl`
 - `annotation_template.csv`
 - `event_log_template.jsonl`
-- `assignment_manifest.jsonl` (if workplan is enabled)
+- `assignment_manifest.jsonl` (if workplan is configured)
 
 ## If something fails
 

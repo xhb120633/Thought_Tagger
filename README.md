@@ -38,7 +38,6 @@ npm run compile -- \
 ## Documentation index
 
 ### Start here (non-technical)
-- [Terminal basics (open terminal + use `cd` step-by-step)](docs/terminal_basics.md)
 - [Researcher quickstart (explains npm/Terminal + UI-first workflow)](docs/quickstart.md)
 - [Installation guide (beginner-friendly)](docs/installation.md)
 - [Study workflow: dataset → deployment → results](docs/workflow_dataset_to_results.md)

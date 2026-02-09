@@ -1,40 +1,8 @@
 # Walkthrough: Dataset/Questions → Deployed Study → Collected Results
 
-This walkthrough is for non-programmer researchers and is UI-first.
+This walkthrough is designed for non-programmer researchers. You can do most study design work in the Studio UI.
 
-## 0) Before starting
-
-- Read `docs/terminal_basics.md` if you are unfamiliar with Terminal.
-- Make sure all commands are run inside the `Thought_Tagger` folder.
-
-## 1) Open terminal and go to the repository folder
-
-### Windows
-
-```powershell
-cd C:\Users\YourName\Downloads\Thought_Tagger
-```
-
-### macOS
-
-```bash
-cd /Users/yourname/Downloads/Thought_Tagger
-```
-
-### Linux
-
-```bash
-cd /home/yourname/Downloads/Thought_Tagger
-```
-
-Check:
-
-```bash
-pwd
-ls
-```
-
-## 2) Prepare the app once
+## 1) Install and prepare once
 
 ```bash
 npm install
@@ -42,7 +10,7 @@ npm run build
 npm run build -w @thought-tagger/studio
 ```
 
-## 3) Open Studio UI
+## 2) Open the Studio UI
 
 ```bash
 npm run dev -w @thought-tagger/studio
@@ -50,21 +18,23 @@ npm run dev -w @thought-tagger/studio
 
 Open the URL shown in terminal (usually `http://localhost:5173`).
 
-## 4) Design the study in Studio (mouse + keyboard)
+## 3) Design your study using mouse + keyboard
 
-1. Fill in study basics under **StudySpec Configuration**.
+In Studio:
+
+1. Set basic study fields in **StudySpec Configuration**.
 2. Create your labeling/evaluation questionnaire in **Rubric Editor**.
-3. Provide data under **Dataset Input** (file upload or text paste).
-4. Check **Preview**.
+3. Provide study text in **Dataset Input** (upload file or paste content).
+4. Check expected outputs in **Preview**.
 5. Click **Export Compiler Bundle**.
 
-For common research use, you do not need to hand-write JSON files.
+You do not need to manually write JSON files for this standard workflow.
 
-## 5) Generate deployment-ready outputs
+## 4) Generate deployment-ready data files (CLI)
 
 If you exported a Studio bundle, use that output for deployment.
 
-If you are using example inputs from this repository:
+If you are using the included example files instead, run:
 
 ```bash
 npm run compile -- \
@@ -73,7 +43,7 @@ npm run compile -- \
   --out deployment/e2e_workspace/data
 ```
 
-## 6) Create deployable workspace
+## 5) Create a deployable workspace
 
 ```bash
 mkdir -p deployment/e2e_workspace
@@ -85,15 +55,15 @@ Now you have:
 - UI shell in `deployment/e2e_workspace/`
 - Study data outputs in `deployment/e2e_workspace/data/`
 
-## 7) Run locally for pilot validation
+## 6) Run locally for pilot validation
 
 ```bash
 npx serve deployment/e2e_workspace -l 4176
 ```
 
-Open `http://localhost:4176` and run one full participant/annotator session.
+Open `http://localhost:4176` and run through one full participant/annotator session.
 
-## 8) Verify key output files exist
+## 7) Verify key generated artifacts
 
 ```bash
 test -f deployment/e2e_workspace/data/manifest.json
@@ -102,10 +72,10 @@ test -f deployment/e2e_workspace/data/annotation_template.csv
 test -f deployment/e2e_workspace/data/event_log_template.jsonl
 ```
 
-## 9) Move to your deployment target
+## 8) Move to your target deployment
 
 - Local / RA server: `docs/deployment/self_host.md`
 - Pavlovia: `docs/deployment/pavlovia.md`
 - Prolific: `docs/deployment/prolific.md`
 
-Use successful local pilot completion as your go/no-go check before external participants.
+Use local pilot completion as your go/no-go check before external participants.
