@@ -46,3 +46,7 @@ This means the software is fit for real studies, but production responsibility i
 ## Bottom line
 
 ThoughtTagger is currently in a **researcher-usable RC state** with strong core functionality; the final production quality depends mainly on deployment operations and governance.
+## Latest repository audit
+
+- See `docs/production_readiness_review.md` for the latest codebase-wide production-readiness review.
+
