@@ -1,4 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { StudioGuidePanel } from "./components/StudioGuidePanel";
+import { StudioHeader } from "./components/StudioHeader";
 import {
   buildArtifacts,
   deriveUnits,
@@ -310,10 +312,16 @@ export function App() {
     }
   });
   const [globalError, setGlobalError] = useState("");
+  const [guideHiddenByDefault, setGuideHiddenByDefault] = useState(() => localStorage.getItem(GUIDE_COLLAPSED_KEY) === "true");
+  const [isGuideVisible, setIsGuideVisible] = useState(() => localStorage.getItem(GUIDE_COLLAPSED_KEY) !== "true");
 
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   }, [draft]);
+
+  useEffect(() => {
+    localStorage.setItem(GUIDE_COLLAPSED_KEY, String(guideHiddenByDefault));
+  }, [guideHiddenByDefault]);
 
   const docs = useMemo(() => {
     try {
