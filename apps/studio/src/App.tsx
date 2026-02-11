@@ -5,8 +5,6 @@ import {
   InputDoc,
   parseCsv,
   parseJsonl,
-  QuestionResponseType,
-  RubricQuestion,
   RunMode,
   StudySpec,
   TaskType,
@@ -17,19 +15,13 @@ import {
 type DatasetFormat = "jsonl" | "csv";
 type SavePolicy = "submit_end" | "checkpoint" | "autosave";
 
-type OptionDraft = {
-  value: string;
-  label: string;
-  description: string;
-};
-
-type QuestionDraft = {
-  question_id: string;
-  prompt: string;
-  required: boolean;
-  help_text: string;
-  response_type: QuestionResponseType;
-  options: OptionDraft[];
+type LabelDraft = {
+  id: string;
+  name: string;
+  definition: string;
+  example: string;
+  counterexample: string;
+  color: string;
 };
 
 type StudioDraft = {
@@ -41,100 +33,56 @@ type StudioDraft = {
   task_type: TaskType;
   unitization_mode: UnitizationMode;
   rubric_version: string;
-  questions: QuestionDraft[];
   instructions_global: string;
   instructions_task: string;
   run_mode: RunMode;
   save_policy: SavePolicy;
   annotator_ids: string;
   replication_factor: number;
-  groups: number;
+  labels: LabelDraft[];
+  enableConfidence: boolean;
+  enableRationale: boolean;
 };
 
-type StudioStepKey =
-  | "create"
-  | "dataset"
-  | "task"
-  | "unitization"
-  | "rubric"
-  | "instructions"
-  | "runmode"
-  | "workplan"
-  | "review";
-
 const DRAFT_KEY = "studio:guided-draft";
-const RA_PREVIEW_KEY = "studio:annotator-preview";
-
-const STEP_ORDER: Array<{ key: StudioStepKey; title: string }> = [
-  { key: "create", title: "Create Study" },
-  { key: "dataset", title: "Upload Dataset" },
-  { key: "task", title: "Choose Task Type" },
-  { key: "unitization", title: "Choose Unitization" },
-  { key: "rubric", title: "Build Rubric" },
-  { key: "instructions", title: "Write Instructions" },
-  { key: "runmode", title: "Run Mode" },
-  { key: "workplan", title: "Work Plan" },
-  { key: "review", title: "Review & Export" }
-];
-
-const LABEL_COLORS = ["#e0f2fe", "#ede9fe", "#dcfce7", "#fef3c7", "#fee2e2", "#fce7f3"];
-
-function defaultQuestionForTask(taskType: TaskType, idx = 1): QuestionDraft {
-  if (taskType === "annotate") {
-    return {
-      question_id: `q_${idx}`,
-      prompt: "Write an annotation for this unit",
-      required: true,
-      help_text: "",
-      response_type: "free_text",
-      options: []
-    };
-  }
-  if (taskType === "compare") {
-    return {
-      question_id: `q_${idx}`,
-      prompt: "Which candidate is better?",
-      required: true,
-      help_text: "Include rationale when uncertain.",
-      response_type: "choice_with_rationale",
-      options: [
-        { value: "A", label: "Candidate A", description: "" },
-        { value: "B", label: "Candidate B", description: "" },
-        { value: "TIE", label: "Tie", description: "" }
-      ]
-    };
-  }
-  return {
-    question_id: `q_${idx}`,
-    prompt: "Select the best label",
-    required: true,
-    help_text: "",
-    response_type: "single_select",
-    options: [
-      { value: "opt_1", label: "Label 1", description: "" },
-      { value: "opt_2", label: "Label 2", description: "" }
-    ]
-  };
-}
+const LABEL_COLORS = ["#dbeafe", "#ede9fe", "#dcfce7", "#fef3c7", "#fee2e2", "#fce7f3"];
 
 const defaultDraft: StudioDraft = {
   study_id: "demo_study",
   study_name: "ThoughtTagger Demo Study",
-  description: "Pilot study for CoT annotation",
+  description: "Spec-driven annotation study for think-aloud data.",
   datasetText:
-    '{"doc_id":"d1","text":"Sentence one. Sentence two."}\n{"doc_id":"d2","text":"Another reflective answer with two steps. It continues."}',
+    '{"doc_id":"d1","text":"I reviewed two solutions. First I checked assumptions. Then I compared runtime tradeoffs."}\n{"doc_id":"d2","text":"I started unsure, then validated with a small example and changed my answer."}',
   datasetFormat: "jsonl",
   task_type: "label",
   unitization_mode: "sentence_step",
-  rubric_version: "v1",
-  questions: [defaultQuestionForTask("label")],
-  instructions_global: "Read each response carefully and apply the rubric consistently.",
-  instructions_task: "Use one best-fit label per unit unless noted otherwise.",
+  rubric_version: "v2",
+  instructions_global: "Read the full response before making sentence-level judgments.",
+  instructions_task: "Tag each sentence with the best-fitting label and optional rationale.",
   run_mode: "participant",
   save_policy: "submit_end",
   annotator_ids: "ra1,ra2,ra3",
-  replication_factor: 1,
-  groups: 1
+  replication_factor: 2,
+  labels: [
+    {
+      id: "problem_framing",
+      name: "Problem framing",
+      definition: "Sentence defines the task, assumptions, or constraints before solving.",
+      example: "I first identified what the question is really asking.",
+      counterexample: "I chose option B.",
+      color: LABEL_COLORS[0]
+    },
+    {
+      id: "verification",
+      name: "Verification",
+      definition: "Sentence checks correctness, test cases, or consistency.",
+      example: "I validated this with a tiny example.",
+      counterexample: "I guessed and moved on.",
+      color: LABEL_COLORS[2]
+    }
+  ],
+  enableConfidence: true,
+  enableRationale: true
 };
 
 function readFileText(file: File): Promise<string> {
@@ -165,205 +113,185 @@ function validateDataset(docs: InputDoc[]) {
   return { errors, warnings };
 }
 
-function validateQuestions(taskType: TaskType, questions: QuestionDraft[]) {
-  const errors: string[] = [];
-  const ids = new Set<string>();
-  questions.forEach((q, idx) => {
-    if (!q.question_id.trim()) errors.push(`Question ${idx + 1}: question_id is required`);
-    if (!q.prompt.trim()) errors.push(`Question ${idx + 1}: prompt is required`);
-    if (ids.has(q.question_id)) errors.push(`Duplicate question_id: ${q.question_id}`);
-    ids.add(q.question_id);
-
-    if (taskType === "annotate" && q.response_type !== "free_text") {
-      errors.push(`Question ${q.question_id}: annotate tasks require free_text response_type`);
-    }
-    if (taskType === "label" && q.response_type !== "single_select" && q.response_type !== "multi_select") {
-      errors.push(`Question ${q.question_id}: label tasks require single_select or multi_select response_type`);
-    }
-    if (taskType === "compare" && q.response_type !== "choice" && q.response_type !== "choice_with_rationale") {
-      errors.push(`Question ${q.question_id}: compare tasks require choice or choice_with_rationale response_type`);
-    }
-
-    if (q.response_type !== "free_text" && q.options.filter((o) => o.value.trim() && o.label.trim()).length < 2) {
-      errors.push(`Question ${q.question_id}: at least two options are required`);
-    }
-  });
-  return errors;
+function splitSentences(text: string) {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
 }
 
-function toRubricQuestions(questions: QuestionDraft[]): RubricQuestion[] {
-  return questions.map((q) => ({
-    question_id: q.question_id,
-    prompt: q.prompt,
-    required: q.required,
-    help_text: q.help_text || undefined,
-    response_type: q.response_type,
-    options:
-      q.response_type === "free_text"
-        ? undefined
-        : q.options
-            .filter((opt) => opt.value.trim() && opt.label.trim())
-            .map((opt) => ({ value: opt.value, label: opt.label, description: opt.description || undefined }))
-  }));
+function classForUnitState(state: "active" | "done" | "queued") {
+  if (state === "active") return "unit-chip active";
+  if (state === "done") return "unit-chip done";
+  return "unit-chip";
 }
 
-function classForStatus(status: "complete" | "in_progress" | "blocked" | "todo") {
-  if (status === "complete") return "badge success";
-  if (status === "in_progress") return "badge info";
-  if (status === "blocked") return "badge danger";
-  return "badge";
-}
-
-function optionsForTask(taskType: TaskType): QuestionResponseType[] {
-  if (taskType === "annotate") return ["free_text"];
-  if (taskType === "compare") return ["choice", "choice_with_rationale"];
-  return ["single_select", "multi_select"];
-}
-
-function AnnotatorWorkspace({ spec, docs, units }: { spec: StudySpec; docs: InputDoc[]; units: Unit[] }) {
+function AnnotatorWorkspace({
+  spec,
+  docs,
+  units,
+  labels,
+  enableConfidence,
+  enableRationale
+}: {
+  spec: StudySpec;
+  docs: InputDoc[];
+  units: Unit[];
+  labels: LabelDraft[];
+  enableConfidence: boolean;
+  enableRationale: boolean;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [labelByUnit, setLabelByUnit] = useState<Record<string, string>>({});
-  const [noteByUnit, setNoteByUnit] = useState<Record<string, string>>({});
-  const [spansByUnit, setSpansByUnit] = useState<Record<string, Array<{ text: string; labelId: string; ts: string }>>>({});
+  const [confidenceByUnit, setConfidenceByUnit] = useState<Record<string, string>>({});
+  const [rationaleByUnit, setRationaleByUnit] = useState<Record<string, string>>({});
+  const [spansByUnit, setSpansByUnit] = useState<Record<string, Array<{ text: string; labelId: string }>>>({});
   const [selectionText, setSelectionText] = useState("");
-  const [compareDecision, setCompareDecision] = useState<Record<string, string>>({});
   const [savedAt, setSavedAt] = useState("");
 
   const activeUnit = units[activeIndex];
   const activeDoc = docs.find((doc) => doc.doc_id === activeUnit?.doc_id) ?? docs[0];
-
-  const firstQuestion = spec.questions?.[0];
-  const palette = (firstQuestion?.options ?? []).map((opt, idx) => ({ ...opt, color: LABEL_COLORS[idx % LABEL_COLORS.length] }));
+  const activeSentenceIndex = activeUnit?.index ?? 0;
+  const sentences = splitSentences(activeDoc?.text ?? "");
 
   useEffect(() => {
     if (spec.run_mode !== "ra") return;
-    const payload = { labelByUnit, noteByUnit, spansByUnit, compareDecision, updatedAt: new Date().toISOString() };
-    localStorage.setItem(RA_PREVIEW_KEY, JSON.stringify(payload));
+    const payload = { labelByUnit, confidenceByUnit, rationaleByUnit, spansByUnit, updatedAt: new Date().toISOString() };
+    localStorage.setItem("studio:annotator-preview", JSON.stringify(payload));
     setSavedAt(payload.updatedAt);
-  }, [labelByUnit, noteByUnit, spansByUnit, compareDecision, spec.run_mode]);
+  }, [labelByUnit, confidenceByUnit, rationaleByUnit, spansByUnit, spec.run_mode]);
 
-  useEffect(() => {
-    const handle = (event: globalThis.KeyboardEvent) => {
-      if (event.key.toLowerCase() === "n") setActiveIndex((idx) => Math.min(units.length - 1, idx + 1));
-      if (event.key.toLowerCase() === "p") setActiveIndex((idx) => Math.max(0, idx - 1));
-    };
-    window.addEventListener("keydown", handle);
-    return () => window.removeEventListener("keydown", handle);
-  }, [units.length]);
+  const onTextMouseUp = () => {
+    const selected = window.getSelection()?.toString() ?? "";
+    setSelectionText(selected.trim());
+  };
 
   const addSpan = (labelId: string) => {
-    if (!selectionText.trim() || !activeUnit) return;
-    const next = [...(spansByUnit[activeUnit.unit_id] ?? []), { text: selectionText.trim(), labelId, ts: new Date().toLocaleTimeString() }];
+    if (!selectionText || !activeUnit) return;
+    const next = [...(spansByUnit[activeUnit.unit_id] ?? []), { text: selectionText, labelId }];
     setSpansByUnit((curr) => ({ ...curr, [activeUnit.unit_id]: next }));
     setSelectionText("");
   };
 
-  const doneCount = Object.keys(labelByUnit).length + Object.keys(noteByUnit).filter((k) => noteByUnit[k]).length;
-  const progress = Math.min(100, Math.round((doneCount / Math.max(units.length, 1)) * 100));
-
-  const onTextMouseUp = () => {
-    const selected = window.getSelection()?.toString() ?? "";
-    setSelectionText(selected);
+  const isDone = (unit: Unit) => {
+    const hasLabel = Boolean(labelByUnit[unit.unit_id]);
+    const hasSpan = (spansByUnit[unit.unit_id] ?? []).length > 0;
+    return spec.unitization_mode === "target_span" ? hasSpan : hasLabel;
   };
 
-  const currentText = spec.unitization_mode === "sentence_step" ? activeUnit?.unit_text ?? "" : activeDoc?.text ?? "";
-  const midpoint = Math.max(1, Math.floor((activeUnit?.unit_text ?? activeDoc?.text ?? "").length / 2));
-
   return (
-    <section className="workspace-shell card">
-      <header className="workspace-header">
-        <h3>Annotator Workspace Preview</h3>
+    <section className="workspace card">
+      <header className="workspace-head">
+        <div>
+          <h3>Annotator Workspace (document-centric preview)</h3>
+          <p className="muted">
+            Same interface across modes. Policy only changes: participant submits once, RA can resume with checkpointed state.
+          </p>
+        </div>
         <div className="workspace-meta">
-          <span className="badge">Progress {progress}%</span>
-          <span className="badge">
-            Unit {activeIndex + 1}/{units.length}
-          </span>
-          {spec.run_mode === "ra" ? (
-            <span className="badge success">Saved {savedAt ? new Date(savedAt).toLocaleTimeString() : "…"}</span>
-          ) : (
-            <span className="badge">Submit at end</span>
-          )}
+          <span className="badge">Unit {activeIndex + 1}/{units.length}</span>
+          {spec.run_mode === "ra" ? <span className="badge success">Resumable • Saved {savedAt ? new Date(savedAt).toLocaleTimeString() : "…"}</span> : <span className="badge">Participant • fixed run</span>}
         </div>
       </header>
-      <div className="workspace-body">
-        <article className="document-pane" onMouseUp={onTextMouseUp}>
-          <h4>{activeDoc?.doc_id}</h4>
-          <p>{currentText}</p>
-          {spec.unitization_mode === "target_span" && selectionText ? <div className="alert">Selected: “{selectionText}”</div> : null}
-          {(spansByUnit[activeUnit?.unit_id ?? ""] ?? []).map((span, idx) => (
-            <div key={`${span.ts}-${idx}`} className="span-chip">
-              <span>{span.text}</span>
-              <strong>{palette.find((label) => label.value === span.labelId)?.label ?? span.labelId}</strong>
-              <small>{span.ts}</small>
-            </div>
-          ))}
-        </article>
-        <aside className="action-pane">
-          <div className="inline-actions">
-            <button onClick={() => setActiveIndex((idx) => Math.max(0, idx - 1))}>Prev (P)</button>
-            <button onClick={() => setActiveIndex((idx) => Math.min(units.length - 1, idx + 1))}>Next (N)</button>
+
+      <div className="workspace-grid">
+        <aside className="panel">
+          <h4>Document outline</h4>
+          <p className="muted">Jump directly to sentence/step units.</p>
+          <div className="unit-list">
+            {units.map((unit, idx) => {
+              const state = idx === activeIndex ? "active" : isDone(unit) ? "done" : "queued";
+              return (
+                <button key={unit.unit_id} className={classForUnitState(state)} onClick={() => setActiveIndex(idx)}>
+                  <strong>#{idx + 1}</strong>
+                  <span>{unit.unit_text.slice(0, 72)}</span>
+                </button>
+              );
+            })}
           </div>
-          <p className="muted">
-            Shortcuts: <kbd>N</kbd> next, <kbd>P</kbd> prev.
-          </p>
-          <h4>Questionnaire</h4>
-          {spec.questions?.map((q) => (
-            <div className="card compact" key={q.question_id}>
-              <strong>{q.prompt}</strong>
-              {q.response_type === "free_text" ? (
-                <textarea
-                  value={noteByUnit[activeUnit?.unit_id ?? ""] ?? ""}
-                  onChange={(e) => setNoteByUnit((curr) => ({ ...curr, [activeUnit.unit_id]: e.target.value }))}
-                />
-              ) : (
-                <div className="palette">
-                  {(q.options ?? []).map((option, idx) => (
-                    <button
-                      key={option.value}
-                      style={{ backgroundColor: LABEL_COLORS[idx % LABEL_COLORS.length] }}
-                      onClick={() => setLabelByUnit((curr) => ({ ...curr, [activeUnit.unit_id]: option.value }))}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+        </aside>
 
-          {spec.task_type === "compare" ? (
-            <div className="compare-grid">
-              <div className="card compact">
-                <h5>Candidate A</h5>
-                <p>{(activeUnit?.unit_text ?? activeDoc?.text ?? "").slice(0, midpoint)}</p>
-              </div>
-              <div className="card compact">
-                <h5>Candidate B</h5>
-                <p>{(activeUnit?.unit_text ?? activeDoc?.text ?? "").slice(midpoint)}</p>
-              </div>
-              <label>
-                Decision
-                <select
-                  value={compareDecision[activeUnit?.unit_id ?? ""] ?? ""}
-                  onChange={(e) => setCompareDecision((curr) => ({ ...curr, [activeUnit.unit_id]: e.target.value }))}
+        <article className="panel reading-surface" onMouseUp={onTextMouseUp}>
+          <h4>{activeDoc?.doc_id}</h4>
+          <p className="muted">Full context is always visible. Active unit is highlighted.</p>
+          <div className="document-flow">
+            {(sentences.length ? sentences : [activeDoc?.text ?? ""]).map((sentence, idx) => {
+              const active = spec.unitization_mode === "document" ? idx === 0 : idx === activeSentenceIndex;
+              return (
+                <p key={`${idx}-${sentence.slice(0, 8)}`} className={`sentence ${active ? "active" : ""}`}>
+                  <span className="index">{idx + 1}</span>
+                  {sentence}
+                </p>
+              );
+            })}
+          </div>
+        </article>
+
+        <aside className="panel controls">
+          <h4>Tagging controls</h4>
+          <div className="inline-actions">
+            <button onClick={() => setActiveIndex((idx) => Math.max(0, idx - 1))}>Prev</button>
+            <button onClick={() => setActiveIndex((idx) => Math.min(units.length - 1, idx + 1))}>Next</button>
+          </div>
+
+          <div className="card compact">
+            <h5>Label decision</h5>
+            <div className="label-grid">
+              {labels.map((label) => (
+                <button
+                  key={label.id}
+                  className={`label-token ${labelByUnit[activeUnit?.unit_id ?? ""] === label.id ? "selected" : ""}`}
+                  style={{ background: label.color }}
+                  onClick={() => activeUnit && setLabelByUnit((curr) => ({ ...curr, [activeUnit.unit_id]: label.id }))}
                 >
-                  <option value="">Select...</option>
-                  <option value="A">Candidate A</option>
-                  <option value="B">Candidate B</option>
-                  <option value="TIE">Tie</option>
-                </select>
-              </label>
-            </div>
-          ) : null}
-
-          {spec.unitization_mode === "target_span" ? (
-            <div className="inline-actions">
-              {palette.map((label) => (
-                <button key={`span-${label.value}`} onClick={() => addSpan(label.value)}>
-                  Tag selection as {label.label}
+                  {label.name}
                 </button>
               ))}
             </div>
+          </div>
+
+          {spec.unitization_mode === "target_span" ? (
+            <div className="card compact">
+              <h5>Span tagging</h5>
+              {selectionText ? <div className="alert">Selected span: “{selectionText}”</div> : <p className="muted">Highlight text in the document, then choose a label.</p>}
+              <div className="label-grid">
+                {labels.map((label) => (
+                  <button key={`${label.id}-span`} style={{ background: label.color }} onClick={() => addSpan(label.id)}>
+                    Tag as {label.name}
+                  </button>
+                ))}
+              </div>
+              {(spansByUnit[activeUnit?.unit_id ?? ""] ?? []).map((span, idx) => (
+                <p className="span-pill" key={`${span.labelId}-${idx}`}>
+                  <strong>{labels.find((label) => label.id === span.labelId)?.name}:</strong> {span.text}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
+          {enableConfidence ? (
+            <label>
+              Confidence
+              <select
+                value={confidenceByUnit[activeUnit?.unit_id ?? ""] ?? ""}
+                onChange={(event) => activeUnit && setConfidenceByUnit((curr) => ({ ...curr, [activeUnit.unit_id]: event.target.value }))}
+              >
+                <option value="">Select confidence</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </label>
+          ) : null}
+
+          {enableRationale ? (
+            <label>
+              Rationale (optional)
+              <textarea
+                value={rationaleByUnit[activeUnit?.unit_id ?? ""] ?? ""}
+                onChange={(event) => activeUnit && setRationaleByUnit((curr) => ({ ...curr, [activeUnit.unit_id]: event.target.value }))}
+              />
+            </label>
           ) : null}
         </aside>
       </div>
@@ -381,14 +309,10 @@ export function App() {
       return defaultDraft;
     }
   });
-  const [activeStep, setActiveStep] = useState<StudioStepKey>("create");
-  const [status, setStatus] = useState("Autosave active");
-  const [showPreview, setShowPreview] = useState(false);
   const [globalError, setGlobalError] = useState("");
 
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    setStatus(`Draft saved ${new Date().toLocaleTimeString()}`);
   }, [draft]);
 
   const docs = useMemo(() => {
@@ -402,21 +326,31 @@ export function App() {
   }, [draft.datasetFormat, draft.datasetText]);
 
   const datasetValidation = useMemo(() => validateDataset(docs), [docs]);
-  const questionValidation = useMemo(() => validateQuestions(draft.task_type, draft.questions), [draft.task_type, draft.questions]);
   const units = useMemo(() => deriveUnits(docs, draft.unitization_mode), [docs, draft.unitization_mode]);
+
+  const totalSentenceJudgments = units.length * draft.replication_factor;
+  const annotatorCount = draft.annotator_ids.split(",").map((value) => value.trim()).filter(Boolean).length || 1;
+  const workPerRater = Math.ceil(totalSentenceJudgments / annotatorCount);
 
   const compiled = useMemo(() => {
     try {
       if (!draft.study_id.trim()) throw new Error("Study ID is required.");
       if (datasetValidation.errors.length) throw new Error("Fix dataset validation errors before export.");
-      if (questionValidation.length) throw new Error("Fix rubric question errors before export.");
       const spec: StudySpec = {
         study_id: draft.study_id,
         rubric_version: draft.rubric_version,
         task_type: draft.task_type,
         unitization_mode: draft.unitization_mode,
         run_mode: draft.run_mode,
-        questions: toRubricQuestions(draft.questions),
+        questions: [
+          {
+            question_id: "label_primary",
+            prompt: "Choose the best label.",
+            required: true,
+            response_type: "single_select",
+            options: draft.labels.map((label) => ({ value: label.id, label: label.name, description: label.definition }))
+          }
+        ],
         workplan: {
           annotator_ids: draft.annotator_ids
             .split(",")
@@ -430,25 +364,17 @@ export function App() {
     } catch {
       return null;
     }
-  }, [datasetValidation.errors.length, docs, draft, questionValidation.length, units]);
-
-  const stepState = useMemo(() => {
-    const map: Record<StudioStepKey, "complete" | "in_progress" | "blocked" | "todo"> = {
-      create: draft.study_name && draft.study_id ? "complete" : "blocked",
-      dataset: docs.length > 0 && datasetValidation.errors.length === 0 ? "complete" : docs.length ? "blocked" : "todo",
-      task: draft.task_type ? "complete" : "todo",
-      unitization: draft.unitization_mode ? "complete" : "todo",
-      rubric: draft.questions.length && questionValidation.length === 0 ? "complete" : "blocked",
-      instructions: draft.instructions_global ? "complete" : "todo",
-      runmode: draft.run_mode ? "complete" : "todo",
-      workplan: draft.annotator_ids.trim() ? "complete" : "todo",
-      review: compiled ? "in_progress" : "blocked"
-    };
-    map[activeStep] = map[activeStep] === "complete" ? "in_progress" : map[activeStep];
-    return map;
-  }, [activeStep, compiled, datasetValidation.errors.length, docs.length, draft, questionValidation.length]);
+  }, [datasetValidation.errors.length, docs, draft, units]);
 
   const update = <K extends keyof StudioDraft>(key: K, value: StudioDraft[K]) => setDraft((prev) => ({ ...prev, [key]: value }));
+
+  const onUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const format: DatasetFormat = file.name.endsWith(".csv") ? "csv" : "jsonl";
+    update("datasetFormat", format);
+    update("datasetText", await readFileText(file));
+  };
 
   const exportBundle = () => {
     if (!compiled) return;
@@ -462,414 +388,212 @@ export function App() {
       anchor.click();
       URL.revokeObjectURL(url);
     });
-    setStatus(`Exported ${Object.keys(artifacts).length} artifacts`);
-  };
-
-  const onUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const format: DatasetFormat = file.name.endsWith(".csv") ? "csv" : "jsonl";
-    update("datasetFormat", format);
-    update("datasetText", await readFileText(file));
-    setStatus(`Loaded ${file.name}`);
-  };
-
-  const addQuestion = () => {
-    const idx = draft.questions.length + 1;
-    update("questions", [...draft.questions, defaultQuestionForTask(draft.task_type, idx)]);
-  };
-
-  const onTaskTypeChange = (taskType: TaskType) => {
-    const transformed = draft.questions.map((q, idx) => {
-      const base = defaultQuestionForTask(taskType, idx + 1);
-      return {
-        ...base,
-        question_id: q.question_id || base.question_id,
-        prompt: q.prompt || base.prompt
-      };
-    });
-    update("task_type", taskType);
-    update("questions", transformed.length ? transformed : [defaultQuestionForTask(taskType)]);
   };
 
   return (
     <main className="app-shell">
-      <aside className="sidebar card">
+      <header className="card hero">
         <h1>ThoughtTagger Studio</h1>
-        <p className="muted">Build a study bundle in guided steps.</p>
-        <nav>
-          {STEP_ORDER.map((step, idx) => (
-            <button key={step.key} className={`step-link ${activeStep === step.key ? "active" : ""}`} onClick={() => setActiveStep(step.key)}>
-              <span>
-                {idx + 1}. {step.title}
-              </span>
-              <span className={classForStatus(stepState[step.key])}>{stepState[step.key]}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="alert subtle">{status}</div>
-      </aside>
+        <p className="muted">A study composer for constrained CoT annotation primitives. Configure once, preview continuously, export spec-driven artifacts.</p>
+      </header>
 
-      <section className="content">
-        {globalError ? <div className="alert danger">{globalError}</div> : null}
-
-        <section className="card">
-          <h2>1. Create Study</h2>
-          <div className="form-grid">
-            <label>
-              Study Name <input value={draft.study_name} onChange={(e) => update("study_name", e.target.value)} />
-            </label>
-            <label>
-              Study ID <input value={draft.study_id} onChange={(e) => update("study_id", e.target.value)} />
-            </label>
-            <label>
-              Rubric Version <input value={draft.rubric_version} onChange={(e) => update("rubric_version", e.target.value)} />
-            </label>
-            <label className="full">
-              Description <textarea value={draft.description} onChange={(e) => update("description", e.target.value)} />
-            </label>
+      <section className="card">
+        <h2>PART A — UI Audit</h2>
+        <div className="audit-grid">
+          <div>
+            <h3>Studio problems</h3>
+            <ul>
+              <li>Linear wizard framing hides the study model and encourages form-filling over design decisions.</li>
+              <li>Task, unitization, rubric, and work plan are disconnected, so researchers miss causal effects on annotation quality.</li>
+              <li>No immediate annotator preview causes blind configuration and late-stage correction cost.</li>
+              <li>Rubric is question-centric instead of label-centric, breaking stable label identity across revisions.</li>
+              <li>Replication shown as raw k/G fields without consequences for workload and cost.</li>
+              <li>Instructions are detached from rendered workspace, so wording quality is hard to evaluate.</li>
+              <li>Validation only flags syntax-level issues, not cognitive risks (too many labels, long definitions).</li>
+              <li>Review section uses aggregate counts but hides per-rater effort distribution.</li>
+            </ul>
           </div>
-        </section>
-
-        <section className="card">
-          <h2>2. Upload Dataset</h2>
-          <div className="inline-actions">
-            <label>
-              Format
-              <select value={draft.datasetFormat} onChange={(e) => update("datasetFormat", e.target.value as DatasetFormat)}>
-                <option value="jsonl">JSONL</option>
-                <option value="csv">CSV</option>
-              </select>
-            </label>
-            <label>
-              Upload dataset<input aria-label="Upload dataset" type="file" accept=".jsonl,.csv" onChange={onUpload} />
-            </label>
+          <div>
+            <h3>Workspace problems</h3>
+            <ul>
+              <li>Context truncation makes sentence labels unreliable for think-aloud traces with long dependencies.</li>
+              <li>Current two-pane layout mixes reading and controls, increasing task-switching cost.</li>
+              <li>Active/completed states are ambiguous, preventing fast recovery after interruption.</li>
+              <li>Span tagging feedback is weak; selections are not clearly tied to label decisions.</li>
+              <li>Navigation is sequential-only by default, slowing adjudication workflows.</li>
+              <li>Questionnaire framing feels survey-like rather than analysis-like.</li>
+              <li>No persistent document outline makes cross-sentence consistency checks difficult.</li>
+              <li>RA resumability is shown as a badge but not tied to concrete progress affordances.</li>
+            </ul>
           </div>
-          <textarea aria-label="Dataset text" value={draft.datasetText} onChange={(e) => update("datasetText", e.target.value)} />
-          {datasetValidation.errors.length > 0 ? (
-            <div className="alert danger">
-              <strong>Dataset errors:</strong>
-              <ul>{datasetValidation.errors.map((error) => <li key={error}>{error}</li>)}</ul>
+          <div>
+            <h3>Visual issues</h3>
+            <ul>
+              <li>Weak hierarchy: most cards share equal weight, obscuring primary task surface.</li>
+              <li>Inconsistent spacing compresses dense sections and inflates low-value controls.</li>
+              <li>Typographic scale is too flat for scanning long, technical configuration pages.</li>
+              <li>Interactive states (active/selected/completed) rely on subtle color only.</li>
+              <li>Buttons and pills lack clear affordance grouping, causing accidental mode errors.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="studio-layout">
+        <div className="content-stack">
+          <section className="card">
+            <h2>Study Overview</h2>
+            <div className="form-grid">
+              <label>Study Name <input value={draft.study_name} onChange={(event) => update("study_name", event.target.value)} /></label>
+              <label>Study ID <input value={draft.study_id} onChange={(event) => update("study_id", event.target.value)} /></label>
+              <label className="full">Description <textarea value={draft.description} onChange={(event) => update("description", event.target.value)} /></label>
             </div>
-          ) : null}
-          {datasetValidation.warnings.length > 0 ? (
-            <div className="alert warning">
-              <strong>Dataset warnings:</strong>
-              <ul>{datasetValidation.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
-            </div>
-          ) : null}
-          <table>
-            <thead>
-              <tr>
-                <th>doc_id</th>
-                <th>text preview</th>
-              </tr>
-            </thead>
-            <tbody>
-              {docs.slice(0, 5).map((doc, index) => (
-                <tr key={`${doc.doc_id}-${index}`}>
-                  <td>{doc.doc_id}</td>
-                  <td>{doc.text.slice(0, 90)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+          </section>
 
-        <section className="card">
-          <h2>3-4. Task + Unitization</h2>
-          <div className="form-grid">
-            <label>
-              Task Type
-              <select value={draft.task_type} onChange={(e) => onTaskTypeChange(e.target.value as TaskType)}>
-                <option value="label">label</option>
-                <option value="annotate">annotate</option>
-                <option value="compare">compare</option>
-              </select>
-            </label>
-            <label>
-              Unitization
-              <select value={draft.unitization_mode} onChange={(e) => update("unitization_mode", e.target.value as UnitizationMode)}>
-                <option value="document">document</option>
-                <option value="sentence_step">sentence_step</option>
-                <option value="target_span">target_span</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section className="card">
-          <div className="inline-actions spread">
-            <h2>5. Rubric Questionnaire Builder</h2>
-            <button onClick={addQuestion}>Add question</button>
-          </div>
-          <p className="muted">Define your own questionnaire like Google Forms. Question controls are constrained by task type.</p>
-          {draft.questions.map((question, qIndex) => (
-            <div key={question.question_id || `q-${qIndex}`} className="label-editor">
-              <div className="inline-actions">
-                <label>
-                  Question ID
-                  <input
-                    value={question.question_id}
-                    onChange={(e) =>
-                      update(
-                        "questions",
-                        draft.questions.map((q, idx) => (idx === qIndex ? { ...q, question_id: e.target.value } : q))
-                      )
-                    }
-                  />
-                </label>
-                <label>
-                  Response type
-                  <select
-                    value={question.response_type}
-                    onChange={(e) =>
-                      update(
-                        "questions",
-                        draft.questions.map((q, idx) =>
-                          idx === qIndex
-                            ? {
-                                ...q,
-                                response_type: e.target.value as QuestionResponseType,
-                                options:
-                                  e.target.value === "free_text"
-                                    ? []
-                                    : q.options.length
-                                      ? q.options
-                                      : [
-                                          { value: "opt_1", label: "Option 1", description: "" },
-                                          { value: "opt_2", label: "Option 2", description: "" }
-                                        ]
-                              }
-                            : q
-                        )
-                      )
-                    }
-                  >
-                    {optionsForTask(draft.task_type).map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Required
-                  <select
-                    value={question.required ? "yes" : "no"}
-                    onChange={(e) =>
-                      update(
-                        "questions",
-                        draft.questions.map((q, idx) => (idx === qIndex ? { ...q, required: e.target.value === "yes" } : q))
-                      )
-                    }
-                  >
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
-                </label>
-                <button onClick={() => update("questions", draft.questions.filter((_, idx) => idx !== qIndex))}>Remove question</button>
-              </div>
-
-              <label>
-                Prompt
-                <textarea
-                  value={question.prompt}
-                  onChange={(e) =>
-                    update(
-                      "questions",
-                      draft.questions.map((q, idx) => (idx === qIndex ? { ...q, prompt: e.target.value } : q))
-                    )
-                  }
-                />
-              </label>
-
-              <label>
-                Help text
-                <textarea
-                  value={question.help_text}
-                  onChange={(e) =>
-                    update(
-                      "questions",
-                      draft.questions.map((q, idx) => (idx === qIndex ? { ...q, help_text: e.target.value } : q))
-                    )
-                  }
-                />
-              </label>
-
-              {question.response_type !== "free_text" ? (
-                <div>
-                  <div className="inline-actions spread">
-                    <strong>Options</strong>
-                    <button
-                      onClick={() =>
-                        update(
-                          "questions",
-                          draft.questions.map((q, idx) =>
-                            idx === qIndex
-                              ? {
-                                  ...q,
-                                  options: [...q.options, { value: `opt_${q.options.length + 1}`, label: `Option ${q.options.length + 1}`, description: "" }]
-                                }
-                              : q
-                          )
-                        )
-                      }
-                    >
-                      Add option
-                    </button>
-                  </div>
-                  {question.options.map((option, optIndex) => (
-                    <div key={`${option.value}-${optIndex}`} className="inline-actions">
-                      <label>
-                        Value
-                        <input
-                          value={option.value}
-                          onChange={(e) =>
-                            update(
-                              "questions",
-                              draft.questions.map((q, idx) =>
-                                idx === qIndex
-                                  ? {
-                                      ...q,
-                                      options: q.options.map((opt, oi) => (oi === optIndex ? { ...opt, value: e.target.value } : opt))
-                                    }
-                                  : q
-                              )
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        Label
-                        <input
-                          value={option.label}
-                          onChange={(e) =>
-                            update(
-                              "questions",
-                              draft.questions.map((q, idx) =>
-                                idx === qIndex
-                                  ? {
-                                      ...q,
-                                      options: q.options.map((opt, oi) => (oi === optIndex ? { ...opt, label: e.target.value } : opt))
-                                    }
-                                  : q
-                              )
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        Description
-                        <input
-                          value={option.description}
-                          onChange={(e) =>
-                            update(
-                              "questions",
-                              draft.questions.map((q, idx) =>
-                                idx === qIndex
-                                  ? {
-                                      ...q,
-                                      options: q.options.map((opt, oi) => (oi === optIndex ? { ...opt, description: e.target.value } : opt))
-                                    }
-                                  : q
-                              )
-                            )
-                          }
-                        />
-                      </label>
-                      <button
-                        onClick={() =>
-                          update(
-                            "questions",
-                            draft.questions.map((q, idx) =>
-                              idx === qIndex ? { ...q, options: q.options.filter((_, oi) => oi !== optIndex) } : q
-                            )
-                          )
-                        }
-                      >
-                        Remove option
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ))}
-          {questionValidation.length > 0 ? (
-            <div className="alert danger">
-              <strong>Rubric question errors:</strong>
-              <ul>{questionValidation.map((error) => <li key={error}>{error}</li>)}</ul>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="card">
-          <h2>6. Instructions</h2>
-          <label>
-            Global instructions<textarea value={draft.instructions_global} onChange={(e) => update("instructions_global", e.target.value)} />
-          </label>
-          <label>
-            Task-specific instructions<textarea value={draft.instructions_task} onChange={(e) => update("instructions_task", e.target.value)} />
-          </label>
-        </section>
-
-        <section className="card">
-          <h2>7-8. Run Mode + Work Plan</h2>
-          <div className="form-grid">
-            <label>
-              Run mode
-              <select value={draft.run_mode} onChange={(e) => update("run_mode", e.target.value as RunMode)}>
-                <option value="participant">participant</option>
-                <option value="ra">ra</option>
-              </select>
-            </label>
-            <label>
-              Save policy
-              <select value={draft.save_policy} onChange={(e) => update("save_policy", e.target.value as SavePolicy)}>
-                <option value="submit_end">Submit at end</option>
-                <option value="checkpoint">Checkpoint</option>
-                <option value="autosave">Autosave</option>
-              </select>
-            </label>
-            <label className="full">
-              Annotator IDs (comma separated)
-              <input value={draft.annotator_ids} onChange={(e) => update("annotator_ids", e.target.value)} />
-            </label>
-            <label>
-              Replication k
-              <input type="number" min={1} value={draft.replication_factor} onChange={(e) => update("replication_factor", Number(e.target.value || 1))} />
-            </label>
-            <label>
-              Groups G
-              <input type="number" min={1} value={draft.groups} onChange={(e) => update("groups", Number(e.target.value || 1))} />
-            </label>
-          </div>
-        </section>
-
-        <section className="card">
-          <div className="inline-actions spread">
-            <h2>9. Review & Export</h2>
+          <section className="card">
+            <h2>Data</h2>
             <div className="inline-actions">
-              <button onClick={() => setShowPreview((curr) => !curr)}>{showPreview ? "Hide" : "Preview as Annotator"}</button>
-              <button className="primary" onClick={exportBundle} disabled={!compiled}>
-                Export Bundle
+              <label>Format
+                <select value={draft.datasetFormat} onChange={(event) => update("datasetFormat", event.target.value as DatasetFormat)}>
+                  <option value="jsonl">JSONL</option>
+                  <option value="csv">CSV</option>
+                </select>
+              </label>
+              <label>Upload dataset<input aria-label="Upload dataset" type="file" accept=".jsonl,.csv" onChange={onUpload} /></label>
+            </div>
+            <textarea aria-label="Dataset text" value={draft.datasetText} onChange={(event) => update("datasetText", event.target.value)} />
+            {datasetValidation.errors.length ? <div className="alert danger"><strong>Dataset errors:</strong> {datasetValidation.errors.join(" • ")}</div> : null}
+            {datasetValidation.warnings.length ? <div className="alert warning">{datasetValidation.warnings.join(" • ")}</div> : null}
+          </section>
+
+          <section className="card">
+            <h2>Annotation Design</h2>
+            <div className="form-grid">
+              <label>Task Type
+                <select value={draft.task_type} onChange={(event) => update("task_type", event.target.value as TaskType)}>
+                  <option value="label">label</option>
+                  <option value="annotate">annotate</option>
+                  <option value="compare">compare</option>
+                </select>
+              </label>
+              <label>Unitization
+                <select value={draft.unitization_mode} onChange={(event) => update("unitization_mode", event.target.value as UnitizationMode)}>
+                  <option value="document">document</option>
+                  <option value="sentence_step">sentence/step</option>
+                  <option value="target_span">target_span</option>
+                </select>
+              </label>
+            </div>
+            <div className="alert subtle">Unitization consequences: document-level gives holistic judgments, sentence/step maximizes granularity, target_span adds fine evidence links with higher cognitive load.</div>
+          </section>
+
+          <section className="card">
+            <div className="inline-actions spread">
+              <h2>Rubric — Label System Designer</h2>
+              <button
+                onClick={() =>
+                  update("labels", [
+                    ...draft.labels,
+                    {
+                      id: `label_${draft.labels.length + 1}`,
+                      name: `Label ${draft.labels.length + 1}`,
+                      definition: "",
+                      example: "",
+                      counterexample: "",
+                      color: LABEL_COLORS[draft.labels.length % LABEL_COLORS.length]
+                    }
+                  ])
+                }
+              >
+                Add label
               </button>
             </div>
-          </div>
-          <ul>
-            <li>Documents: {docs.length}</li>
-            <li>Avg length: {docs.length ? Math.round(docs.reduce((acc, doc) => acc + doc.text.length, 0) / docs.length) : 0} chars</li>
-            <li>Derived units: {units.length}</li>
-            <li>Estimated workload: docs × k = {docs.length * draft.replication_factor}</li>
-            <li>Estimated unit workload: units × k = {units.length * draft.replication_factor}</li>
-            <li>Run mode: {draft.run_mode} ({draft.save_policy})</li>
-            <li>Questions configured: {draft.questions.length}</li>
-          </ul>
-        </section>
+            {draft.labels.map((label, idx) => (
+              <div className="label-editor" key={label.id}>
+                <div className="inline-actions">
+                  <span className="label-chip" style={{ background: label.color }}>{label.name || "Untitled label"}</span>
+                  <button onClick={() => update("labels", draft.labels.filter((_, index) => index !== idx))}>Remove</button>
+                </div>
+                <div className="form-grid">
+                  <label>ID<input value={label.id} onChange={(event) => update("labels", draft.labels.map((entry, index) => (index === idx ? { ...entry, id: event.target.value } : entry)))} /></label>
+                  <label>Name<input value={label.name} onChange={(event) => update("labels", draft.labels.map((entry, index) => (index === idx ? { ...entry, name: event.target.value } : entry)))} /></label>
+                  <label className="full">Definition<textarea value={label.definition} onChange={(event) => update("labels", draft.labels.map((entry, index) => (index === idx ? { ...entry, definition: event.target.value } : entry)))} /></label>
+                  <label>Example<input value={label.example} onChange={(event) => update("labels", draft.labels.map((entry, index) => (index === idx ? { ...entry, example: event.target.value } : entry)))} /></label>
+                  <label>Counterexample<input value={label.counterexample} onChange={(event) => update("labels", draft.labels.map((entry, index) => (index === idx ? { ...entry, counterexample: event.target.value } : entry)))} /></label>
+                </div>
+              </div>
+            ))}
+            <div className="inline-actions">
+              <label><input type="checkbox" checked={draft.enableConfidence} onChange={(event) => update("enableConfidence", event.target.checked)} /> Confidence addon</label>
+              <label><input type="checkbox" checked={draft.enableRationale} onChange={(event) => update("enableRationale", event.target.checked)} /> Rationale addon</label>
+            </div>
+          </section>
 
-        {showPreview && compiled ? <AnnotatorWorkspace spec={compiled.spec} docs={compiled.docs} units={compiled.units} /> : null}
+          <section className="card">
+            <h2>Instructions</h2>
+            <label>Global instructions<textarea value={draft.instructions_global} onChange={(event) => update("instructions_global", event.target.value)} /></label>
+            <label>Task instructions<textarea value={draft.instructions_task} onChange={(event) => update("instructions_task", event.target.value)} /></label>
+          </section>
+
+          <section className="card">
+            <h2>Execution Plan</h2>
+            <div className="form-grid">
+              <label>Run mode
+                <select value={draft.run_mode} onChange={(event) => update("run_mode", event.target.value as RunMode)}>
+                  <option value="participant">participant</option>
+                  <option value="ra">RA (resumable)</option>
+                </select>
+              </label>
+              <label>Save policy
+                <select value={draft.save_policy} onChange={(event) => update("save_policy", event.target.value as SavePolicy)}>
+                  <option value="submit_end">submit_end</option>
+                  <option value="checkpoint">checkpoint</option>
+                  <option value="autosave">autosave</option>
+                </select>
+              </label>
+              <label className="full">Annotator IDs<input value={draft.annotator_ids} onChange={(event) => update("annotator_ids", event.target.value)} /></label>
+              <label>Replication factor (k)<input type="number" min={1} value={draft.replication_factor} onChange={(event) => update("replication_factor", Number(event.target.value || 1))} /></label>
+            </div>
+            <div className="workload-grid">
+              <div className="workload-card"><strong>{docs.length}</strong><span>documents</span></div>
+              <div className="workload-card"><strong>{units.length}</strong><span>sentences/units</span></div>
+              <div className="workload-card"><strong>{draft.replication_factor}</strong><span>raters per document</span></div>
+              <div className="workload-card"><strong>{totalSentenceJudgments}</strong><span>total sentence judgments</span></div>
+              <div className="workload-card"><strong>{workPerRater}</strong><span>estimated work per rater</span></div>
+            </div>
+            <div className="alert subtle">Replication policy: each document is assigned to k distinct raters, and each assigned rater labels all units in that document.</div>
+          </section>
+
+          <section className="card">
+            <div className="inline-actions spread">
+              <h2>Review & Export</h2>
+              <button className="primary" onClick={exportBundle} disabled={!compiled}>Export Bundle</button>
+            </div>
+            {globalError ? <div className="alert danger">{globalError}</div> : null}
+            <ul>
+              <li>Study Spec generated from constrained primitives only.</li>
+              <li>Live preview reflects current label system, unitization, and run mode policy.</li>
+              <li>Commercial-quality target: calm typography, explicit states, and cognition-first layout.</li>
+            </ul>
+          </section>
+        </div>
+
+        {compiled ? (
+          <div className="preview-column">
+            <AnnotatorWorkspace
+              spec={compiled.spec}
+              docs={compiled.docs}
+              units={compiled.units}
+              labels={draft.labels}
+              enableConfidence={draft.enableConfidence}
+              enableRationale={draft.enableRationale}
+            />
+          </div>
+        ) : null}
       </section>
     </main>
   );
 }
+
+
+export default App;
