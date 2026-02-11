@@ -29,6 +29,21 @@ describe("Studio guided UI", () => {
     expect(screen.getByText("Duplicate doc_id: d1")).toBeTruthy();
   });
 
+
+  it("hides guide when do-not-show-again is enabled and reopens from header button", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.getByText("Before You Start — Studio Guide & Requirements")).toBeTruthy();
+    await user.click(screen.getByLabelText("Don't show again (you can always reopen from the Guide button)"));
+
+    expect(screen.queryByText("Before You Start — Studio Guide & Requirements")).toBeNull();
+    expect(localStorage.getItem("thoughttagger:studioGuideCollapsed")).toBe("true");
+
+    await user.click(screen.getByText("Guide"));
+    expect(screen.getByText("Before You Start — Studio Guide & Requirements")).toBeTruthy();
+  });
+
   it("exports bundle artifacts", async () => {
     const user = userEvent.setup();
     Object.defineProperty(URL, "createObjectURL", { value: vi.fn(() => "blob:mock"), writable: true });
