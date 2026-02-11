@@ -47,6 +47,7 @@ type StudioDraft = {
 };
 
 const DRAFT_KEY = "studio:guided-draft";
+const GUIDE_COLLAPSED_KEY = "studio:guide-collapsed";
 const LABEL_COLORS = ["#dbeafe", "#ede9fe", "#dcfce7", "#fef3c7", "#fee2e2", "#fce7f3"];
 
 const defaultDraft: StudioDraft = {
