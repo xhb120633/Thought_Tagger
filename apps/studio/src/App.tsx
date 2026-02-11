@@ -47,7 +47,6 @@ type StudioDraft = {
 };
 
 const DRAFT_KEY = "studio:guided-draft";
-const GUIDE_COLLAPSED_KEY = "thoughttagger:studioGuideCollapsed";
 const LABEL_COLORS = ["#dbeafe", "#ede9fe", "#dcfce7", "#fef3c7", "#fee2e2", "#fce7f3"];
 
 const defaultDraft: StudioDraft = {
@@ -345,7 +344,6 @@ export function App() {
     try {
       if (!draft.study_id.trim()) throw new Error("Study ID is required.");
       if (datasetValidation.errors.length) throw new Error("Fix dataset validation errors before export.");
-      // Studio Guide Panel content is intentionally UI-only and never serialized into StudySpec or export artifacts.
       const spec: StudySpec = {
         study_id: draft.study_id,
         rubric_version: draft.rubric_version,
@@ -402,17 +400,52 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <StudioHeader onOpenGuide={() => setIsGuideVisible(true)} guideHiddenByDefault={guideHiddenByDefault} />
+      <header className="card hero">
+        <h1>ThoughtTagger Studio</h1>
+        <p className="muted">A study composer for constrained CoT annotation primitives. Configure once, preview continuously, export spec-driven artifacts.</p>
+      </header>
 
-      <StudioGuidePanel
-        isVisible={isGuideVisible}
-        onClose={() => setIsGuideVisible(false)}
-        dontShowAgain={guideHiddenByDefault}
-        onDontShowAgainChange={(next) => {
-          setGuideHiddenByDefault(next);
-          if (next) setIsGuideVisible(false);
-        }}
-      />
+      <section className="card">
+        <h2>PART A — UI Audit</h2>
+        <div className="audit-grid">
+          <div>
+            <h3>Studio problems</h3>
+            <ul>
+              <li>Linear wizard framing hides the study model and encourages form-filling over design decisions.</li>
+              <li>Task, unitization, rubric, and work plan are disconnected, so researchers miss causal effects on annotation quality.</li>
+              <li>No immediate annotator preview causes blind configuration and late-stage correction cost.</li>
+              <li>Rubric is question-centric instead of label-centric, breaking stable label identity across revisions.</li>
+              <li>Replication shown as raw k/G fields without consequences for workload and cost.</li>
+              <li>Instructions are detached from rendered workspace, so wording quality is hard to evaluate.</li>
+              <li>Validation only flags syntax-level issues, not cognitive risks (too many labels, long definitions).</li>
+              <li>Review section uses aggregate counts but hides per-rater effort distribution.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Workspace problems</h3>
+            <ul>
+              <li>Context truncation makes sentence labels unreliable for think-aloud traces with long dependencies.</li>
+              <li>Current two-pane layout mixes reading and controls, increasing task-switching cost.</li>
+              <li>Active/completed states are ambiguous, preventing fast recovery after interruption.</li>
+              <li>Span tagging feedback is weak; selections are not clearly tied to label decisions.</li>
+              <li>Navigation is sequential-only by default, slowing adjudication workflows.</li>
+              <li>Questionnaire framing feels survey-like rather than analysis-like.</li>
+              <li>No persistent document outline makes cross-sentence consistency checks difficult.</li>
+              <li>RA resumability is shown as a badge but not tied to concrete progress affordances.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Visual issues</h3>
+            <ul>
+              <li>Weak hierarchy: most cards share equal weight, obscuring primary task surface.</li>
+              <li>Inconsistent spacing compresses dense sections and inflates low-value controls.</li>
+              <li>Typographic scale is too flat for scanning long, technical configuration pages.</li>
+              <li>Interactive states (active/selected/completed) rely on subtle color only.</li>
+              <li>Buttons and pills lack clear affordance grouping, causing accidental mode errors.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <section className="studio-layout">
         <div className="content-stack">
