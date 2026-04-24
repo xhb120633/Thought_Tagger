@@ -47,7 +47,7 @@ type StudioDraft = {
 };
 
 const DRAFT_KEY = "studio:guided-draft";
-const GUIDE_COLLAPSED_KEY = "studio:guide-collapsed";
+const GUIDE_COLLAPSED_KEY = "thoughttagger:studioGuideCollapsed";
 const LABEL_COLORS = ["#dbeafe", "#ede9fe", "#dcfce7", "#fef3c7", "#fee2e2", "#fce7f3"];
 
 const defaultDraft: StudioDraft = {
@@ -401,10 +401,20 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <header className="card hero">
-        <h1>ThoughtTagger Studio</h1>
-        <p className="muted">A study composer for constrained CoT annotation primitives. Configure once, preview continuously, export spec-driven artifacts.</p>
-      </header>
+      <StudioHeader
+        onOpenGuide={() => setIsGuideVisible(true)}
+        guideHiddenByDefault={guideHiddenByDefault}
+      />
+
+      <StudioGuidePanel
+        isVisible={isGuideVisible}
+        onClose={() => setIsGuideVisible(false)}
+        dontShowAgain={guideHiddenByDefault}
+        onDontShowAgainChange={(next) => {
+          setGuideHiddenByDefault(next);
+          setIsGuideVisible(!next);
+        }}
+      />
 
       <section className="card">
         <h2>PART A — UI Audit</h2>
